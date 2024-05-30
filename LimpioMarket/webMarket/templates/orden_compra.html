@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Orden de Compra</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <h1>Orden de Compra</h1>
+
+    <div class="container">
+        <div class="form-container">
+            <h2>Agregar artículo de aseo</h2>
+            <form id="agregar-form" method="post">
+                {% csrf_token %}
+                <label for="nombre">Producto:</label>
+                <input type="text" id="nombre" name="nombre" required><br>
+                <label for="cantidad">Cantidad:</label>
+                <input type="number" id="cantidad" name="cantidad" required><br>
+                <label for="precio">Precio:</label>
+                <input type="number" step="0.01" id="precio" name="precio" required><br>
+                <button type="submit" name="agregar_producto">+</button>
+            </form>
+        </div>
+
+        <div class="productos-container">
+            <h2>Productos Añadidos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unitario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                        <tr>
+                            <td>{{ producto.nombre }}</td>
+                            <td>{{ producto.cantidad }}</td>
+                            <td>{{ producto.precio|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="total-container">
+                <h3>Total:</h3>
+                <p>{{ total_precio|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="contact-info">
+        <h2>Información de Contacto</h2>
+        <form id="informacion-form" method="post">
+            {% csrf_token %}
+            <label for="direccion">Dirección:</label>
+            <input type="text" id="direccion" name="direccion" required><br>
+            <label for="correo">Correo:</label>
+            <input type="email" id="correo" name="correo" required><br>
+            <label for="rut">RUT:</label>
+            <input type="text" id="rut" name="rut" required><br>
+            <button type="button" id="confirmar-btn">Confirmar</button>
+        </form>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('confirmar-btn').addEventListener('click', function() {
+            var direccion = document.getElementById('direccion').value;
+            var correo = document.getElementById('correo').value;
+            var rut = document.getElementById('rut').value;
+
+            if (!direccion || !correo || !rut) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Por favor, complete todos los campos de información de contacto.'
+                });
+            } else {
+                $.ajax({
+                    type: 'POST',
+                    url: '{% url "guardar_orden_de_compra" %}',
+                    data: $('#informacion-form').serialize(),
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Éxito',
+                                text: response.success
+                            }).then(function() {
+                                location.reload();
+                            });
+                        } else if (response.error) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.error
+                            });
+                        }
+                    }
+                });
+            }
+        });
+    });
+</script>
+</body>
+</html>
