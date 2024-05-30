@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lista de Órdenes de Compra</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+    <h1>Lista de Órdenes de Compra</h1>
+
+    <div class="container">
+        <div class="ordenes-container">
+            <h2>Órdenes de Compra</h2>
+            {% for orden in ordenes %}
+            <div class="orden">
+                <h3>Orden de Compra #{{ orden.id }} - {{ orden.rut }}</h3>
+                <p><strong>Dirección:</strong> {{ orden.direccion }}</p>
+                <p><strong>Correo:</strong> {{ orden.correo }}</p>
+                <p><strong>Fecha:</strong> {{ orden.fecha }}</p>
+                <h4>Productos:</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Precio Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producto in orden.productos.all %}
+                        <tr>
+                            <td>{{ producto.nombre }}</td>
+                            <td>{{ producto.cantidad }}</td>
+                            <td>{{ producto.precio|floatformat:2 }}</td>
+                            <td>{{ producto.precio_total|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <h4>Total de la Orden: {{ orden.total|floatformat:2 }}</h4>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
