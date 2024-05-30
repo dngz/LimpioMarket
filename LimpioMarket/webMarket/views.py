@@ -44,3 +44,6 @@ def guardar_orden_de_compra(request):
         return JsonResponse({'success': '¡La orden de compra se ha guardado correctamente!'})
     
     return JsonResponse({'error': 'Método no permitido.'})
+
+def login(request):
+    return render(request,'login.html')

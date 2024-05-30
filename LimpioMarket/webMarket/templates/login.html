@@ -1,0 +1,25 @@
+<!-- FILEPATH: /C:/Users/DUOC/Desktop/LimpioMarket/LimpioMarket/webMarket/templates/login.html -->
+{% load static %}
+{% block content %}
+<div class="container">
+    <div class="login-box">
+        <h2>Iniciar sesión</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="user-box">
+                <input type="text" name="username" required="">
+                <label>Usuario</label>
+            </div>
+            <div class="user-box">
+                <input type="password" name="password" required="">
+                <label>Contraseña</label>
+            </div>
+            <button type="submit">Iniciar sesión</button>
+        </form>
+    </div>
+</div>
+{% endblock content %}
+
+{% block css %}
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock css%}
