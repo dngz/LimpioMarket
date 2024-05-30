@@ -35,19 +35,13 @@
                         <th>Precio Unitario</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for producto in productos %}
-                        <tr>
-                            <td>{{ producto.nombre }}</td>
-                            <td>{{ producto.cantidad }}</td>
-                            <td>{{ producto.precio|floatformat:2 }}</td>
-                        </tr>
-                    {% endfor %}
+                <tbody id="productos-body">
+                    <!-- Aquí se agregarán dinámicamente los productos -->
                 </tbody>
             </table>
             <div class="total-container">
                 <h3>Total:</h3>
-                <p>{{ total_precio|floatformat:2 }}</p>
+                <p id="total-precio">0.00</p>
             </div>
         </div>
     </div>
@@ -56,6 +50,7 @@
         <h2>Información de Contacto</h2>
         <form id="informacion-form" method="post">
             {% csrf_token %}
+            <input type="hidden" id="productos-seleccionados" name="productos_seleccionados">
             <label for="direccion">Dirección:</label>
             <input type="text" id="direccion" name="direccion" required><br>
             <label for="correo">Correo:</label>
@@ -66,45 +61,66 @@
         </form>
     </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('confirmar-btn').addEventListener('click', function() {
-            var direccion = document.getElementById('direccion').value;
-            var correo = document.getElementById('correo').value;
-            var rut = document.getElementById('rut').value;
-
-            if (!direccion || !correo || !rut) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Por favor, complete todos los campos de información de contacto.'
-                });
-            } else {
+    <script>
+        // Variable para almacenar los IDs de los productos seleccionados
+        var productosSeleccionados = [];
+    
+        // Función para agregar un producto al carrito y actualizar el campo oculto
+        function agregarProducto(id, nombre, cantidad, precio) {
+            // Agregar el ID del producto a la lista
+            productosSeleccionados.push(id);
+    
+            // Actualizar el valor del campo oculto con los IDs de los productos seleccionados
+            document.getElementById('productos-seleccionados').value = JSON.stringify(productosSeleccionados);
+    
+            // Agregar el producto a la tabla de productos añadidos
+            var row = '<tr><td>' + nombre + '</td><td>' + cantidad + '</td><td>' + precio.toFixed(2) + '</td></tr>';
+            $('#productos-body').append(row);
+    
+            // Actualizar el total del precio
+            var total = parseFloat($('#total-precio').text()) + (cantidad * precio);
+            $('#total-precio').text(total.toFixed(2));
+        }
+    
+        // Esperar a que el DOM esté cargado
+        $(document).ready(function() {
+            // Escuchar el evento submit del formulario para agregar productos
+            $('#agregar-form').submit(function(event) {
+                // Evitar que se envíe el formulario de manera tradicional
+                event.preventDefault();
+    
+                // Realizar una solicitud AJAX para agregar el producto
                 $.ajax({
                     type: 'POST',
-                    url: '{% url "guardar_orden_de_compra" %}',
-                    data: $('#informacion-form').serialize(),
+                    url: $(this).attr('action'),
+                    data: $(this).serialize(),
+                    dataType: 'json',
                     success: function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Éxito',
-                                text: response.success
-                            }).then(function() {
-                                location.reload();
-                            });
-                        } else if (response.error) {
+                        // Verificar si la respuesta contiene datos válidos
+                        if (response && response.id !== undefined && response.nombre !== undefined && response.cantidad !== undefined && response.precio !== undefined) {
+                            // Llamar a la función para agregar el producto a la tabla
+                            agregarProducto(response.id, response.nombre, response.cantidad, response.precio);
+                        } else {
+                            // Mostrar un mensaje de error si la respuesta no es válida
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
-                                text: response.error
+                                text: 'Ha ocurrido un error al agregar el producto.'
                             });
                         }
+                    },
+                    error: function(xhr, status, error) {
+                        // Mostrar un mensaje de error si ocurre un error en la solicitud AJAX
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Ha ocurrido un error al procesar la solicitud.'
+                        });
                     }
                 });
-            }
+            });
         });
-    });
-</script>
+    
+    </script>
 </body>
 </html>

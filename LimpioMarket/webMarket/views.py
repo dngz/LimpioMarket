@@ -16,8 +16,13 @@ def orden_de_compra(request):
             nombre = request.POST['nombre']
             cantidad = int(request.POST['cantidad'])
             precio = float(request.POST['precio'])
-            Producto.objects.create(nombre=nombre, cantidad=cantidad, precio=precio)
-            return redirect('orden_compra')
+            producto = Producto.objects.create(nombre=nombre, cantidad=cantidad, precio=precio)
+            return JsonResponse({
+                'id': producto.id,
+                'nombre': producto.nombre,
+                'cantidad': producto.cantidad,
+                'precio': producto.precio
+            })
 
     return render(request, 'orden_compra.html', {'productos': productos, 'total_precio': total_precio})
 
@@ -26,7 +31,7 @@ def guardar_orden_de_compra(request):
         direccion = request.POST['direccion']
         correo = request.POST['correo']
         rut = request.POST['rut']
-        productos = Producto.objects.all()
+        productos_seleccionados = request.POST.getlist('productos_seleccionados') # Obtener los IDs de los productos seleccionados
 
         # Validación de la información de contacto
         if not direccion or not correo or not rut:
@@ -34,13 +39,32 @@ def guardar_orden_de_compra(request):
 
         # Creación de la orden de compra
         orden_compra = OrdenDeCompra.objects.create(direccion=direccion, correo=correo, rut=rut)
-        for producto in productos:
+        for producto_id in productos_seleccionados:
+            producto = Producto.objects.get(id=producto_id)
             orden_compra.productos.add(producto)
         orden_compra.save()
 
         # Eliminar los productos añadidos a la orden de compra
-        productos.delete()
+        Producto.objects.filter(id__in=productos_seleccionados).delete()
 
         return JsonResponse({'success': '¡La orden de compra se ha guardado correctamente!'})
     
     return JsonResponse({'error': 'Método no permitido.'})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def lista_productos(request):
+    ordenes = OrdenDeCompra.objects.all().prefetch_related('productos')
+    return render(request, 'lista.html', {'ordenes': ordenes})
