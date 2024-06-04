@@ -1,21 +1,27 @@
 from django.contrib import admin
-from .models import Producto, OrdenDeCompra
+from .models import Usuario, Producto, OrdenDeCompra, DetallePedido
 
-# Register your models here.
+class UsuarioAdmin(admin.ModelAdmin):
+    list_display = ('nombre_usuario', 'email', 'rut', 'telefono', 'direccion', 'nombre_completo', 'esta_activo', 'es_administrador')
+    search_fields = ('nombre_usuario', 'email')
+    ordering = ('nombre_usuario',)
 
-@admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'cantidad', 'precio')
+    list_display = ('nombre', 'precio')
     search_fields = ('nombre',)
+    ordering = ('nombre',)
 
-@admin.register(OrdenDeCompra)
 class OrdenDeCompraAdmin(admin.ModelAdmin):
-    list_display = ('id', 'rut', 'direccion', 'correo', 'fecha', 'total')
-    search_fields = ('rut', 'direccion', 'correo')
-    date_hierarchy = 'fecha'
-    filter_horizontal = ('productos',)
-    
-    def total(self, obj):
-        return obj.total()
+    list_display = ('usuario', 'fecha', 'subtotal', 'total', 'descuento', 'envio')
+    search_fields = ('usuario__nombre_usuario',)
+    ordering = ('-fecha',)
 
-    total.short_description = 'Total'
+class DetallePedidoAdmin(admin.ModelAdmin):
+    list_display = ('orden_de_compra', 'producto', 'cantidad')
+    search_fields = ('orden_de_compra__id', 'producto__nombre')
+    ordering = ('orden_de_compra',)
+
+admin.site.register(Usuario, UsuarioAdmin)
+admin.site.register(Producto, ProductoAdmin)
+admin.site.register(OrdenDeCompra, OrdenDeCompraAdmin)
+admin.site.register(DetallePedido, DetallePedidoAdmin)
