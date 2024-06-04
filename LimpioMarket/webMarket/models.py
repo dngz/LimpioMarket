@@ -48,7 +48,6 @@ class Usuario(AbstractBaseUser):
 class Producto(models.Model):
     nombre = models.CharField(max_length=100)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
-    cantidad = models.IntegerField()
 
     def __str__(self):
         return self.nombre
@@ -67,3 +66,4 @@ class OrdenDeCompra(models.Model):
 class DetallePedido(models.Model):
     orden_de_compra = models.ForeignKey(OrdenDeCompra, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.IntegerField()

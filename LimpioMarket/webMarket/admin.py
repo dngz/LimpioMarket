@@ -7,7 +7,7 @@ class UsuarioAdmin(admin.ModelAdmin):
     ordering = ('nombre_usuario',)
 
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'precio','cantidad')
+    list_display = ('nombre', 'precio')
     search_fields = ('nombre',)
     ordering = ('nombre',)
 
@@ -17,7 +17,7 @@ class OrdenDeCompraAdmin(admin.ModelAdmin):
     ordering = ('-fecha',)
 
 class DetallePedidoAdmin(admin.ModelAdmin):
-    list_display = ('orden_de_compra', 'producto')
+    list_display = ('orden_de_compra', 'producto', 'cantidad')
     search_fields = ('orden_de_compra__id', 'producto__nombre')
     ordering = ('orden_de_compra',)
 
