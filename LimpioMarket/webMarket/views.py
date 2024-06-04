@@ -3,6 +3,12 @@ from django.shortcuts import render, redirect
 from .models import Producto, OrdenDeCompra
 from django.db.models import F, Sum
 from django.http import JsonResponse
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib import messages
+from django.contrib.auth import authenticate, login as auth_login
+from django.contrib.messages import get_messages
+from django.utils.safestring import mark_safe
+import json
 
 def index(request):
     return render(request, 'index.html')  # Asumo que tienes un template llamado 'index.html'
@@ -52,7 +58,30 @@ def guardar_orden_de_compra(request):
     return JsonResponse({'error': 'Método no permitido.'})
 
 def login(request):
-    return render(request,'login.html')
+    print("login view called")
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                auth_login(request, user)
+                messages.success(request, f"¡Bienvenido, {username}!")
+                return redirect('lista_productos')  # Cambia 'index' por el nombre de la URL a la que quieras redirigir después del login
+            else:
+                messages.error(request, "Usuario o contraseña incorrectos.")
+        else:
+            messages.error(request, "Formulario inválido.")
+    else:
+        form = AuthenticationForm()
+    
+    # Obtener los mensajes
+    storage = get_messages(request)
+    message_list = [{'message': message.message, 'tags': message.tags} for message in storage]
+    message_json = mark_safe(json.dumps(message_list))
+
+    return render(request, 'login.html', {'form': form, 'messages': message_json})
 
 def lista_productos(request):
     ordenes = OrdenDeCompra.objects.all().prefetch_related('productos')
