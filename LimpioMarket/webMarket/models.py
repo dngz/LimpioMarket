@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
-
+from django.contrib.auth.models import User
 class MiAdministradorDeUsuarios(BaseUserManager):
     def crear_usuario(self, nombre_usuario, contrasena=None):
         if not nombre_usuario:
@@ -52,7 +52,7 @@ class Producto(models.Model):
         return self.cantidad * self.precio
 
 class OrdenDeCompra(models.Model):
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)  # Nuevo campo de usuario
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     productos = models.ManyToManyField(Producto, related_name='orden_compra')
     fecha = models.DateTimeField(auto_now_add=True)
     direccion = models.CharField(max_length=255, default='')
