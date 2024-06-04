@@ -106,5 +106,81 @@
         });
     });
 </script>
+<script>
+    $(document).ready(function() {
+        $('#agregar-form').on('submit', function(e) {
+            e.preventDefault();
+    
+            var nombre = $('#nombre').val();
+            var cantidad = $('#cantidad').val();
+            var precio = $('#precio').val();
+    
+            $.ajax({
+                url: '',
+                method: 'POST',
+                data: {
+                    'agregar_producto': true,
+                    'nombre': nombre,
+                    'cantidad': cantidad,
+                    'precio': precio,
+                    'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(data) {
+                    // Actualiza la sección de "Productos añadidos"
+                    var producto = '<tr><td>' + data.nombre + '</td><td>' + cantidad + '</td><td>' + data.precio + '</td></tr>';
+                    $('table tbody').append(producto);
+                }
+            });
+        });
+    });
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#agregar-form').on('submit', function(e) {
+                e.preventDefault();
+        
+                var nombre = $('#nombre').val();
+                var cantidad = parseInt($('#cantidad').val());
+                var precio = parseFloat($('#precio').val());
+        
+                $.ajax({
+                    url: '',
+                    method: 'POST',
+                    data: {
+                        'agregar_producto': true,
+                        'nombre': nombre,
+                        'cantidad': cantidad,
+                        'precio': precio,
+                        'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
+                    },
+                    success: function(data) {
+                        // Busca si el producto ya existe en la tabla
+                        var existe = false;
+                        $('table tbody tr').each(function() {
+                            if ($(this).find('td:first').text() === data.nombre) {
+                                // Si el producto ya existe, actualiza la cantidad y el precio
+                                var cantidadActual = parseInt($(this).find('td:nth-child(2)').text());
+                                var precioActual = parseFloat($(this).find('td:nth-child(3)').text());
+                                $(this).find('td:nth-child(2)').text(cantidadActual + cantidad);
+                                $(this).find('td:nth-child(3)').text((precioActual + precio).toFixed(2));
+                                existe = true;
+                            }
+                        });
+        
+                        // Si el producto no existe, añádelo a la tabla
+                        if (!existe) {
+                            var producto = '<tr><td>' + data.nombre + '</td><td>' + cantidad + '</td><td>' + precio.toFixed(2) + '</td></tr>';
+                            $('table tbody').append(producto);
+                        }
+        
+                        // Actualiza el total
+                        var total = parseFloat($('.total-container p').text());
+                        total += cantidad * precio;
+                        $('.total-container p').text(total.toFixed(2));
+                    }
+                });
+            });
+        });
+        </script>
 </body>
 </html>

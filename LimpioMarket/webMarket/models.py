@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
+from django.contrib.auth.models import User
 
 class MiAdministradorDeUsuarios(BaseUserManager):
     def crear_usuario(self, nombre_usuario, contrasena=None, **extra_fields):
@@ -67,3 +68,9 @@ class DetallePedido(models.Model):
     orden_de_compra = models.ForeignKey(OrdenDeCompra, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.IntegerField()
+
+
+class CarritoDeCompra(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.IntegerField(default=1)

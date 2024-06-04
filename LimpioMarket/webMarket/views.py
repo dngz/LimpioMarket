@@ -10,53 +10,56 @@ from django.utils.safestring import mark_safe
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 import json
+from .models import *
 
 def index(request):
     return render(request, 'index.html')
 
 @login_required
 def orden_de_compra(request):
-
-
-    productos = Producto.objects.all()
-    total_precio = productos.aggregate(total=Sum(F('precio')))['total'] or 0
-
     if request.method == 'POST':
         if 'agregar_producto' in request.POST:
             nombre = request.POST['nombre']
             precio = float(request.POST['precio'])
             producto = Producto.objects.create(nombre=nombre, precio=precio)
+            carrito = CarritoDeCompra.objects.create(usuario=request.user, producto=producto)
             return JsonResponse({
                 'id': producto.id,
                 'nombre': producto.nombre,
                 'precio': producto.precio
             })
 
+    if isinstance(request.user, Usuario):
+        carrito = CarritoDeCompra.objects.filter(usuario=request.user)
+    else:
+        carrito = []
+
+    productos = [item.producto for item in carrito]
+    total_precio = sum([producto.precio for producto in productos])
+
     return render(request, 'orden_compra.html', {'productos': productos, 'total_precio': total_precio})
+
+
 
 @login_required
 def guardar_orden_de_compra(request):
-
-
     if request.method == 'POST':
         direccion = request.POST['direccion']
         correo = request.POST['correo']
         rut = request.POST['rut']
-        productos_seleccionados = request.POST.getlist('productos_seleccionados')
 
         if not direccion or not correo or not rut:
             return JsonResponse({'error': 'Por favor, complete todos los campos de información de contacto.'})
 
         orden_compra = OrdenDeCompra.objects.create(usuario=request.user, direccion=direccion, correo=correo, rut=rut)
         
-        # Correctamente agregar productos a la orden de compra
-        for producto_id in productos_seleccionados:
-            producto = Producto.objects.get(id=producto_id)
+        carrito = CarritoDeCompra.objects.filter(usuario=request.user)
+        for item in carrito:
+            producto = item.producto
             orden_compra.productos.add(producto)
+            item.delete()
 
         orden_compra.save()
-
-        Producto.objects.filter(id__in=productos_seleccionados).delete()
 
         return JsonResponse({'success': '¡La orden de compra se ha guardado correctamente!'})
     
