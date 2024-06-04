@@ -5,12 +5,7 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/lista.css' %}">
     <style>
-        .total-container {
-            text-align: right;
-        }
-        .total-container p {
-            margin: 0;
-        }
+        /* Estilos CSS aquí */
     </style>
 </head>
 <body>
@@ -20,11 +15,31 @@
         {% for orden_info in ordenes_con_total %}
             <div class="orden">
                 <h2>Orden de Compra #{{ orden_info.orden.id }}</h2>
-                <p><strong>Usuario:</strong> {{ orden_info.orden.usuario.username }}</p>
-                <p><strong>Dirección:</strong> {{ orden_info.orden.direccion }}</p>
-                <p><strong>Correo:</strong> {{ orden_info.orden.correo }}</p>
-                <p><strong>RUT:</strong> {{ orden_info.orden.rut }}</p>
-                <p><strong>Fecha:</strong> {{ orden_info.orden.fecha }}</p>
+                <br>
+                <div class="info-container">
+                    <table>
+                        <tr>
+                            <th>Vendedor</th>
+                            <th>Enviar a</th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p><strong>Usuario:</strong> {{ orden_info.orden.usuario.username }}</p>
+                                <p><strong>Dirección:</strong> {{ orden_info.orden.direccion }}</p>
+                                <p><strong>Correo:</strong> {{ orden_info.orden.correo }}</p>
+                                <p><strong>RUT:</strong> {{ orden_info.orden.rut }}</p>
+                                <p><strong>Fecha:</strong> {{ orden_info.orden.fecha }}</p>
+                            </td>
+                            <td>
+                                <p><strong>Cliente:</strong> Cliente Falso</p>
+                                <p><strong>Empresa:</strong> Empresa Falsa A</p>
+                                <p><strong>Direccion:</strong> Dirección Falsa</p>
+                                <p><strong>Teléfono:</strong> 123456789</p>
+                                <p><strong>E-mail:</strong> cliente@falso.com</p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
                 <div class="productos-container">
                     <h3>Productos:</h3>
                     <table>
@@ -65,7 +80,6 @@
                             </tr>
                         </tfoot>
                     </table>
-                    
                 </div>
                 <h5 style="margin-bottom: 1%;">Si tiene alguna duda sobre esta orden de compra, por favor póngase en contacto con: fr.verag@duocuc.cl</h5>
             </div>

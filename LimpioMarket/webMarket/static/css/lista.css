@@ -86,3 +86,6 @@ h1 {
 .add-button:hover {
     background-color: #45a049;
 }
+.orden .info-container table td:first-child {
+    width: 60%; /* Ajusta el valor según lo necesites */
+}
