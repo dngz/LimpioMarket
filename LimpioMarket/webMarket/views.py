@@ -16,8 +16,7 @@ def index(request):
 
 @login_required
 def orden_de_compra(request):
-    if not request.user.is_superuser:
-        return HttpResponseForbidden("No tienes permiso para acceder a esta página")
+
 
     productos = Producto.objects.all()
     total_precio = productos.aggregate(total=Sum(F('precio')))['total'] or 0
@@ -37,8 +36,7 @@ def orden_de_compra(request):
 
 @login_required
 def guardar_orden_de_compra(request):
-    if not request.user.is_superuser:
-        return HttpResponseForbidden("No tienes permiso para acceder a esta página")
+
 
     if request.method == 'POST':
         direccion = request.POST['direccion']
@@ -90,8 +88,7 @@ def login(request):
 
 @login_required
 def lista_productos(request):
-    if not request.user.is_superuser:
-        return HttpResponseForbidden("No tienes permiso para acceder a esta página")
+
     
     ordenes = OrdenDeCompra.objects.all().prefetch_related('productos')
     ordenes_con_total = []
