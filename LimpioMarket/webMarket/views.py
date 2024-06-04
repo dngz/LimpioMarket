@@ -20,18 +20,16 @@ def orden_de_compra(request):
         return HttpResponseForbidden("No tienes permiso para acceder a esta página")
 
     productos = Producto.objects.all()
-    total_precio = productos.aggregate(total=Sum(F('cantidad') * F('precio')))['total'] or 0
+    total_precio = productos.aggregate(total=Sum(F('precio')))['total'] or 0
 
     if request.method == 'POST':
         if 'agregar_producto' in request.POST:
             nombre = request.POST['nombre']
-            cantidad = int(request.POST['cantidad'])
             precio = float(request.POST['precio'])
-            producto = Producto.objects.create(nombre=nombre, cantidad=cantidad, precio=precio)
+            producto = Producto.objects.create(nombre=nombre, precio=precio)
             return JsonResponse({
                 'id': producto.id,
                 'nombre': producto.nombre,
-                'cantidad': producto.cantidad,
                 'precio': producto.precio
             })
 
