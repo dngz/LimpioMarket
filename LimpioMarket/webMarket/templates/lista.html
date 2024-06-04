@@ -3,45 +3,89 @@
 <head>
     <title>Lista de Órdenes de Compra</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/lista.css' %}">
+    <style>
+        /* Estilos CSS aquí */
+    </style>
 </head>
 <body>
-    <h1>Lista de Órdenes de Compra</h1>
-
     <div class="container">
-        <div class="ordenes-container">
-            <h2>Órdenes de Compra</h2>
-            {% for orden in ordenes %}
+        <h1>Lista de Órdenes de Compra</h1><br>
+        <br>
+        {% for orden_info in ordenes_con_total %}
             <div class="orden">
-                <h3>Orden de Compra #{{ orden.id }} - {{ orden.rut }}</h3>
-                <p><strong>Dirección:</strong> {{ orden.direccion }}</p>
-                <p><strong>Correo:</strong> {{ orden.correo }}</p>
-                <p><strong>Fecha:</strong> {{ orden.fecha }}</p>
-                <h4>Productos:</h4>
-                <table>
-                    <thead>
+                <h2>Orden de Compra #{{ orden_info.orden.id }}</h2>
+                <br>
+                <div class="info-container">
+                    <table>
                         <tr>
-                            <th>Producto</th>
-                            <th>Cantidad</th>
-                            <th>Precio Unitario</th>
-                            <th>Precio Total</th>
+                            <th>Vendedor</th>
+                            <th>Enviar a</th>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {% for producto in orden.productos.all %}
                         <tr>
-                            <td>{{ producto.nombre }}</td>
-                            <td>{{ producto.cantidad }}</td>
-                            <td>{{ producto.precio|floatformat:2 }}</td>
-                            <td>{{ producto.precio_total|floatformat:2 }}</td>
+                            <td>
+                                <p><strong>Usuario:</strong> {{ orden_info.orden.usuario.username }}</p>
+                                <p><strong>Dirección:</strong> {{ orden_info.orden.direccion }}</p>
+                                <p><strong>Correo:</strong> {{ orden_info.orden.correo }}</p>
+                                <p><strong>RUT:</strong> {{ orden_info.orden.rut }}</p>
+                                <p><strong>Fecha:</strong> {{ orden_info.orden.fecha }}</p>
+                            </td>
+                            <td>
+                                <p><strong>Cliente:</strong> Cliente Falso</p>
+                                <p><strong>Empresa:</strong> Empresa Falsa A</p>
+                                <p><strong>Direccion:</strong> Dirección Falsa</p>
+                                <p><strong>Teléfono:</strong> 123456789</p>
+                                <p><strong>E-mail:</strong> cliente@falso.com</p>
+                            </td>
                         </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                <h4>Total de la Orden: {{ orden.total|floatformat:2 }}</h4>
+                    </table>
+                </div>
+                <div class="productos-container">
+                    <h3>Productos:</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unitario</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for producto in orden_info.orden.productos.all %}
+                                <tr>
+                                    <td>{{ producto.nombre }}</td>
+                                    <td>{{ producto.cantidad }}</td>
+                                    <td>{{ producto.precio|floatformat:2 }}</td>
+                                    <td>{{ producto.precio_total|floatformat:2 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="total-container">Subtotal:</td>
+                                <td class="total-container">{{ orden_info.total|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="total-container">Envío:</td>
+                                <td class="total-container">0.00</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="total-container">IVA:</td>
+                                <td class="total-container">0.00</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="total-container"><strong>TOTAL:</strong></td>
+                                <td class="total-container"><strong>{{ orden_info.total|floatformat:2 }}</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <h5 style="margin-bottom: 1%;">Si tiene alguna duda sobre esta orden de compra, por favor póngase en contacto con: fr.verag@duocuc.cl</h5>
             </div>
-            {% endfor %}
-        </div>
+        {% endfor %}
     </div>
+
+    <a href="{% url 'orden_de_compra' %}" class="add-button">Añadir Orden de Compra</a>
 </body>
 </html>
