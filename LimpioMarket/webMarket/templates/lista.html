@@ -1,47 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Lista de Órdenes de Compra</title>
+    <title>Lista de Órdenes y Facturas</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/lista.css' %}">
-    <style>
-        /* Estilos CSS aquí */
-    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Lista de Órdenes de Compra</h1><br>
-        <br>
-        {% for orden_info in ordenes_con_total %}
+        <h1>Lista de Órdenes y Facturas</h1>
+        {% for item in ordenes_con_factura %}
             <div class="orden">
-                <h2>Orden de Compra #{{ orden_info.orden.id }}</h2>
-                <br>
+                <h2>Orden de Compra</h2>
                 <div class="info-container">
                     <table>
                         <tr>
-                            <th>Vendedor</th>
-                            <th>Enviar a</th>
+                            <td>ID de Orden:</td>
+                            <td>{{ item.orden.id }}</td>
                         </tr>
                         <tr>
-                            <td>
-                                <p><strong>Usuario:</strong> {{ orden_info.orden.usuario.username }}</p>
-                                <p><strong>Dirección:</strong> {{ orden_info.orden.direccion }}</p>
-                                <p><strong>Correo:</strong> {{ orden_info.orden.correo }}</p>
-                                <p><strong>RUT:</strong> {{ orden_info.orden.rut }}</p>
-                                <p><strong>Fecha:</strong> {{ orden_info.orden.fecha }}</p>
-                            </td>
-                            <td>
-                                <p><strong>Cliente:</strong> Cliente Falso</p>
-                                <p><strong>Empresa:</strong> Empresa Falsa A</p>
-                                <p><strong>Direccion:</strong> Dirección Falsa</p>
-                                <p><strong>Teléfono:</strong> 123456789</p>
-                                <p><strong>E-mail:</strong> cliente@falso.com</p>
-                            </td>
+                            <td>Usuario:</td>
+                            <td>{{ item.orden.usuario.nombre_usuario }}</td>
+                        </tr>
+                        <tr>
+                            <td>Fecha:</td>
+                            <td>{{ item.orden.fecha }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Orden:</td>
+                            <td>{{ item.total }}</td>
                         </tr>
                     </table>
                 </div>
+
+                <h2>Factura</h2>
+                <div class="info-container">
+                    <table>
+                        <tr>
+                            <td>ID de Factura:</td>
+                            <td>{{ item.factura.numero_factura }}</td>
+                        </tr>
+                        <tr>
+                            <td>Subtotal:</td>
+                            <td>{{ item.factura.subtotal }}</td>
+                        </tr>
+                        <tr>
+                            <td>Impuestos:</td>
+                            <td>{{ item.factura.impuestos }}</td>
+                        </tr>
+                        <tr>
+                            <td>Total Factura:</td>
+                            <td>{{ item.factura.total }}</td>
+                        </tr>
+                    </table>
+                </div>
+
                 <div class="productos-container">
-                    <h3>Productos:</h3>
+                    <h3>Productos</h3>
                     <table>
                         <thead>
                             <tr>
@@ -52,40 +66,19 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for producto in orden_info.orden.productos.all %}
+                            {% for detalle in item.detalles %}
                                 <tr>
-                                    <td>{{ producto.nombre }}</td>
-                                    <td>{{ producto.cantidad }}</td>
-                                    <td>{{ producto.precio|floatformat:2 }}</td>
-                                    <td>{{ producto.precio_total|floatformat:2 }}</td>
+                                    <td>{{ detalle.producto.nombre }}</td>
+                                    <td>{{ detalle.cantidad }}</td>
+                                    <td>{{ detalle.producto.precio }}</td>
+                                    <td>{{ detalle.total }}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="3" class="total-container">Subtotal:</td>
-                                <td class="total-container">{{ orden_info.total|floatformat:2 }}</td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" class="total-container">Envío:</td>
-                                <td class="total-container">0.00</td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" class="total-container">IVA:</td>
-                                <td class="total-container">0.00</td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" class="total-container"><strong>TOTAL:</strong></td>
-                                <td class="total-container"><strong>{{ orden_info.total|floatformat:2 }}</strong></td>
-                            </tr>
-                        </tfoot>
                     </table>
                 </div>
-                <h5 style="margin-bottom: 1%;">Si tiene alguna duda sobre esta orden de compra, por favor póngase en contacto con: fr.verag@duocuc.cl</h5>
             </div>
         {% endfor %}
     </div>
-
-    <a href="{% url 'orden_de_compra' %}" class="add-button">Añadir Orden de Compra</a>
 </body>
 </html>

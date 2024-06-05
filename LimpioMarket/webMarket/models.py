@@ -93,3 +93,12 @@ class CarritoDeCompra(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.IntegerField(default=1)
 
+class Factura(models.Model):
+    orden_de_compra = models.OneToOneField(OrdenDeCompra, on_delete=models.CASCADE)
+    numero_factura = models.CharField(max_length=10, unique=True)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    impuestos = models.DecimalField(max_digits=10, decimal_places=2)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return self.numero_factura

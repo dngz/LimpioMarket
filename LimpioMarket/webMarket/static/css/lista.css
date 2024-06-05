@@ -9,6 +9,9 @@ body {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
@@ -20,7 +23,7 @@ h1 {
 .orden {
     background-color: #fff;
     border: 1px solid #ddd;
-    border-radius: 5px;
+    border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
 }
@@ -28,64 +31,53 @@ h1 {
 .orden h2 {
     color: #333;
     margin-bottom: 10px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 5px;
 }
 
-.orden p {
-    margin-bottom: 5px;
+.orden .info-container {
+    margin-bottom: 15px;
 }
 
-.orden .productos-container {
-    background-color: #f9f9f9;
-    padding: 15px;
-    border-radius: 5px;
-    margin-top: 10px;
-}
-
-.orden .productos-container table {
+.orden .info-container table {
     width: 100%;
     border-collapse: collapse;
 }
 
-.orden .productos-container table th,
-.orden .productos-container table td {
-    border: 1px solid #ddd;
+.orden .info-container table td {
     padding: 8px;
+    border: 1px solid #ddd;
     text-align: left;
 }
 
-.orden .productos-container table th {
-    background-color: #f2f2f2;
-}
-
-.orden .productos-container table td {
-    background-color: #fff;
-}
-
-.orden .productos-container .total-container {
-    margin-top: 10px;
-    text-align: right;
-}
-
-.orden .productos-container .total-container p {
-    font-weight: bold;
-}
-
-.add-button {
-    position: fixed;
-    bottom: 50%;
-    right: 20px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.add-button:hover {
-    background-color: #45a049;
-}
 .orden .info-container table td:first-child {
-    width: 60%; /* Ajusta el valor según lo necesites */
+    font-weight: bold;
+    background-color: #f9f9f9;
+}
+
+.productos-container {
+    margin-top: 20px;
+}
+
+.productos-container h3 {
+    color: #555;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 5px;
+}
+
+.productos-container table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.productos-container table th, .productos-container table td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.productos-container table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
 }
