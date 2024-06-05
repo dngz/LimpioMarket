@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
+from django.utils import timezone
 
 class MiAdministradorDeUsuarios(BaseUserManager):
     def create_user(self, nombre_usuario, password=None, **extra_fields):
@@ -96,9 +96,10 @@ class CarritoDeCompra(models.Model):
 class Factura(models.Model):
     orden_de_compra = models.OneToOneField(OrdenDeCompra, on_delete=models.CASCADE)
     numero_factura = models.CharField(max_length=10, unique=True)
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
-    impuestos = models.DecimalField(max_digits=10, decimal_places=2)
-    total = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.IntegerField()
+    impuestos = models.IntegerField()
+    total = models.IntegerField()
+    fecha_emision = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return self.numero_factura

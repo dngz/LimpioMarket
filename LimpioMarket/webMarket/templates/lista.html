@@ -1,84 +1,156 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Lista de Órdenes y Facturas</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/lista.css' %}">
 </head>
+
 <body>
     <div class="container">
-        <h1>Lista de Órdenes y Facturas</h1>
+        <div class="logo-container" style="display: flex; align-items: center; margin-left: 15%;">
+            <img src="{% static 'img/l.png' %}" alt="Logo" width="100" style="margin-right: 10px;">
+            <h1>Lista de órdenes y facturas</h1>
+        </div>
+
         {% for item in ordenes_con_factura %}
-            <div class="orden">
-                <h2>Orden de Compra</h2>
-                <div class="info-container">
-                    <table>
-                        <tr>
-                            <td>ID de Orden:</td>
-                            <td>{{ item.orden.id }}</td>
-                        </tr>
-                        <tr>
-                            <td>Usuario:</td>
-                            <td>{{ item.orden.usuario.nombre_usuario }}</td>
-                        </tr>
-                        <tr>
-                            <td>Fecha:</td>
-                            <td>{{ item.orden.fecha }}</td>
-                        </tr>
-                        <tr>
-                            <td>Total Orden:</td>
-                            <td>{{ item.total }}</td>
-                        </tr>
-                    </table>
-                </div>
+        <div class="orden">
+            <h2>Orden de Compra</h2>
+            <div class="info-container">
+                <table>
+                    <tr>
+                        <td>ID de Orden:</td>
+                        <td>{{ item.orden.id }}</td>
+                    </tr>
+                    <tr>
+                        <td>Usuario:</td>
+                        <td>{{ item.orden.usuario.nombre_usuario }}</td>
+                    </tr>
+                    <tr>
+                        <td>Fecha:</td>
+                        <td>{{ item.orden.fecha }}</td>
+                    </tr>
+                    <tr>
+                        <td>Total Orden:</td>
+                        <td>{{ item.total }}</td>
+                    </tr>
+                </table>
+            </div>
 
-                <h2>Factura</h2>
-                <div class="info-container">
-                    <table>
-                        <tr>
-                            <td>ID de Factura:</td>
-                            <td>{{ item.factura.numero_factura }}</td>
-                        </tr>
-                        <tr>
-                            <td>Subtotal:</td>
-                            <td>{{ item.factura.subtotal }}</td>
-                        </tr>
-                        <tr>
-                            <td>Impuestos:</td>
-                            <td>{{ item.factura.impuestos }}</td>
-                        </tr>
-                        <tr>
-                            <td>Total Factura:</td>
-                            <td>{{ item.factura.total }}</td>
-                        </tr>
-                    </table>
-                </div>
-
-                <div class="productos-container">
-                    <h3>Productos</h3>
-                    <table>
+            <div class="vendedor-comprador-container">
+                <div class="vendedor">
+                    <table class="vendedor-comprador-tabla">
                         <thead>
                             <tr>
-                                <th>Producto</th>
-                                <th>Cantidad</th>
-                                <th>Precio Unitario</th>
-                                <th>Total</th>
+                                <th colspan="2">VENDEDOR</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for detalle in item.detalles %}
-                                <tr>
-                                    <td>{{ detalle.producto.nombre }}</td>
-                                    <td>{{ detalle.cantidad }}</td>
-                                    <td>{{ detalle.producto.precio }}</td>
-                                    <td>{{ detalle.total }}</td>
-                                </tr>
-                            {% endfor %}
+                            <tr>
+                                <td>Nombre:</td>
+                                <td>LimpiaMarket</td>
+                            </tr>
+                            <tr>
+                                <td>Rut empresa:</td>
+                                <td>77.341.890-K</td>
+                            </tr>
+                            <tr>
+                                <td>Dirección:</td>
+                                <td>Maroto 1248</td>
+                            </tr>
+                            <tr>
+                                <td>Teléfono:</td>
+                                <td>947877788</td>
+                            </tr>
+                            <tr>
+                                <td>E-mail:</td>
+                                <td>fr.verag@duocuc.cl</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="comprador">
+                    <table class="vendedor-comprador-tabla">
+                        <thead>
+                            <tr>
+                                <th colspan="2">COMPRADOR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Nombre Completo:</td>
+                                <td>{{ item.orden.usuario.nombre_completo }}</td>
+                            </tr>
+                            <tr>
+                                <td>RUT:</td>
+                                <td>{{ item.orden.usuario.rut }}</td>
+                            </tr>
+                            <tr>
+                                <td>Email:</td>
+                                <td>{{ item.orden.usuario.email }}</td>
+                            </tr>
+                            <tr>
+                                <td>Teléfono:</td>
+                                <td>{{ item.orden.usuario.telefono }}</td>
+                            </tr>
+                            <tr>
+                                <td>Dirección:</td>
+                                <td>{{ item.orden.direccion }}</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            <h2>Factura</h2>
+            <div class="info-container">
+                <table class="factura-tabla">
+                    <tr>
+                        <td colspan="4"><strong>ID de Factura:</strong> {{ item.factura.numero_factura }}</td>
+                    </tr>
+                    <tr>
+                        <th>Productos</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unitario</th>
+                        <th>Total</th>
+                    </tr>
+                    {% for detalle in item.detalles %}
+                    <tr>
+                        <td>{{ detalle.producto.nombre }}</td>
+                        <td>{{ detalle.cantidad }}</td>
+                        <td>{{ detalle.producto.precio }}</td>
+                        <td>{{ detalle.total }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>Subtotal:</strong></td>
+                        <td>{{ item.factura.subtotal|floatformat:0 }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>IVA(19%):</strong></td>
+                        <td>{{ item.factura.impuestos|floatformat:0 }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>Descuento:</strong></td>
+                        <td>0</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>Envio:</strong></td>
+                        <td>0</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>Total Factura:</strong></td>
+                        <td>{{ item.factura.total|floatformat:0 }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
         {% endfor %}
+        <div class="button-container">
+            <a href="{% url 'orden_de_compra' %}" class="btn"><button class="btn">Nueva Orden de Compra</button></a>
+        </div>
     </div>
 </body>
+
 </html>

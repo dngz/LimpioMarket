@@ -11,7 +11,7 @@ import json
 from .models import Usuario, CarritoDeCompra, Producto, OrdenDeCompra, DetallePedido, Factura
 from django.db.models import F, Sum
 from django.utils.crypto import get_random_string
-
+from django.utils import timezone
 def index(request):
     return render(request, 'index.html')
 
@@ -96,12 +96,12 @@ def login(request):
 
 @login_required
 def lista_productos(request):
-    usuario = request.user  # Obtener el usuario autenticado
+    usuario = request.user
     ordenes = OrdenDeCompra.objects.filter(usuario=usuario).prefetch_related('detalles__producto')
     ordenes_con_factura = []
 
     for orden in ordenes:
-        impuestos = round(orden.subtotal * 0.19, 2)
+        impuestos = int(orden.subtotal * 0.19)
         total_factura = orden.subtotal + impuestos
 
         factura, created = Factura.objects.get_or_create(
@@ -110,7 +110,8 @@ def lista_productos(request):
                 'numero_factura': get_random_string(length=10, allowed_chars='0123456789'),
                 'subtotal': orden.subtotal,
                 'impuestos': impuestos,
-                'total': total_factura
+                'total': total_factura,
+                'fecha_emision': timezone.now()
             }
         )
         if not created:
