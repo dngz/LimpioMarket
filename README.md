@@ -1,6 +1,6 @@
 # LimpioMarket
 
-## Qué hace el proyecto
+## Sobre nosotros
 LimpioMarket es una aplicación web desarrollada con Django que facilita la gestión de órdenes de compra y la generación de facturas para artículos de aseo. Permite a los usuarios realizar pedidos de manera eficiente y generar documentación contable de forma automatizada.
 
 ## Justificación del Proyecto
