@@ -1,6 +1,4 @@
 from django.shortcuts import render, redirect
-from .models import Producto, OrdenDeCompra
-from django.db.models import F, Sum
 from django.http import JsonResponse, HttpResponseForbidden
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
@@ -8,61 +6,68 @@ from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.messages import get_messages
 from django.utils.safestring import mark_safe
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+from django.db import transaction
 import json
-from .models import *
+from .models import Usuario, CarritoDeCompra, Producto, OrdenDeCompra, DetallePedido
+from django.db.models import F, Sum
+
 
 def index(request):
     return render(request, 'index.html')
 
 @login_required
 def orden_de_compra(request):
-    if request.method == 'POST':
-        if 'agregar_producto' in request.POST:
-            nombre = request.POST['nombre']
-            precio = float(request.POST['precio'])
-            producto = Producto.objects.create(nombre=nombre, precio=precio)
-            carrito = CarritoDeCompra.objects.create(usuario=request.user, producto=producto)
-            return JsonResponse({
-                'id': producto.id,
-                'nombre': producto.nombre,
-                'precio': producto.precio
-            })
-
-    if isinstance(request.user, Usuario):
-        carrito = CarritoDeCompra.objects.filter(usuario=request.user)
-    else:
-        carrito = []
-
-    productos = [item.producto for item in carrito]
-    total_precio = sum([producto.precio for producto in productos])
+    try:
+        usuario = Usuario.objects.get(nombre_usuario=request.user.nombre_usuario)
+    except Usuario.DoesNotExist:
+        return HttpResponseForbidden("El usuario no existe.")
+    
+    carrito = CarritoDeCompra.objects.filter(usuario=usuario)
+    productos = [{'nombre': item.producto.nombre, 'precio': item.producto.precio, 'cantidad': item.cantidad} for item in carrito]
+    total_precio = sum([item.producto.precio * item.cantidad for item in carrito])
 
     return render(request, 'orden_compra.html', {'productos': productos, 'total_precio': total_precio})
-
-
 
 @login_required
 def guardar_orden_de_compra(request):
     if request.method == 'POST':
-        direccion = request.POST['direccion']
-        correo = request.POST['correo']
-        rut = request.POST['rut']
+        direccion = request.POST.get('direccion', '')
+        productos_json = request.POST.get('productos')
 
-        if not direccion or not correo or not rut:
-            return JsonResponse({'error': 'Por favor, complete todos los campos de información de contacto.'})
+        productos = json.loads(productos_json)
 
-        orden_compra = OrdenDeCompra.objects.create(usuario=request.user, direccion=direccion, correo=correo, rut=rut)
-        
-        carrito = CarritoDeCompra.objects.filter(usuario=request.user)
-        for item in carrito:
-            producto = item.producto
-            orden_compra.productos.add(producto)
-            item.delete()
+        try:
+            usuario = Usuario.objects.get(nombre_usuario=request.user.nombre_usuario)
+        except Usuario.DoesNotExist:
+            return JsonResponse({'error': 'Usuario no encontrado.'})
 
-        orden_compra.save()
+        subtotal = sum([int(producto['cantidad']) * int(producto['precio']) for producto in productos])
+        total = subtotal + (3000 if direccion else 0)
 
-        return JsonResponse({'success': '¡La orden de compra se ha guardado correctamente!'})
-    
+        try:
+            with transaction.atomic():
+                orden_compra = OrdenDeCompra.objects.create(
+                    usuario=usuario,
+                    direccion=direccion,
+                    subtotal=subtotal,
+                    total=total
+                )
+
+                for producto_data in productos:
+                    producto, created = Producto.objects.get_or_create(
+                        nombre=producto_data['nombre'],
+                        defaults={'precio': producto_data['precio']}
+                    )
+                    DetallePedido.objects.create(
+                        orden_de_compra=orden_compra,
+                        producto=producto,
+                        cantidad=int(producto_data['cantidad'])
+                    )
+
+            return JsonResponse({'success': '¡La orden de compra se ha guardado correctamente!'})
+        except Exception as e:
+            return JsonResponse({'error': f'Ocurrió un error al guardar la orden de compra: {str(e)}'})
+
     return JsonResponse({'error': 'Método no permitido.'})
 
 def login(request):
@@ -91,16 +96,14 @@ def login(request):
 
 @login_required
 def lista_productos(request):
-
-    
-    ordenes = OrdenDeCompra.objects.all().prefetch_related('productos')
+    ordenes = OrdenDeCompra.objects.all().prefetch_related('detalles__producto')
     ordenes_con_total = []
 
     for orden in ordenes:
-        total = orden.productos.aggregate(total=Sum(F('cantidad') * F('precio')))['total'] or 0
+        total = orden.detalles.aggregate(total=Sum(F('cantidad') * F('producto__precio')))['total'] or 0
         ordenes_con_total.append({
             'orden': orden,
             'total': total,
         })
-    
+
     return render(request, 'lista.html', {'ordenes_con_total': ordenes_con_total})

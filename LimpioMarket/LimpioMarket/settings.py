@@ -72,6 +72,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'LimpioMarket.wsgi.application'
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Default
+    'webMarket.auth_backend.UsuarioBackend',  # Agrega tu backend personalizado
+]
+
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases

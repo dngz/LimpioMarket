@@ -6,6 +6,27 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .envio-options,
+        .direccion-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .envio-options label,
+        .direccion-container label {
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+        }
+        .envio-options label span,
+        .direccion-container label span {
+            margin-right: 5px;
+        }
+        .direccion-container input {
+            margin-left: 10px;
+        }
+    </style>
 </head>
 <body>
     <h1>Orden de Compra</h1>
@@ -20,8 +41,8 @@
                 <label for="cantidad">Cantidad:</label>
                 <input type="number" id="cantidad" name="cantidad" required><br>
                 <label for="precio">Precio:</label>
-                <input type="number" step="0.01" id="precio" name="precio" required><br>
-                <button type="submit" name="agregar_producto">+</button>
+                <input type="number" step="1" id="precio" name="precio" required><br>
+                <button type="button" id="agregar-producto-btn">+</button>
             </form>
         </div>
 
@@ -35,19 +56,12 @@
                         <th>Precio Unitario</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for producto in productos %}
-                        <tr>
-                            <td>{{ producto.nombre }}</td>
-                            <td>{{ producto.cantidad }}</td>
-                            <td>{{ producto.precio|floatformat:2 }}</td>
-                        </tr>
-                    {% endfor %}
+                <tbody id="productos-tbody">
                 </tbody>
             </table>
             <div class="total-container">
                 <h3>Total:</h3>
-                <p>{{ total_precio|floatformat:2 }}</p>
+                <p id="total-precio">0</p>
             </div>
         </div>
     </div>
@@ -56,131 +70,132 @@
         <h2>Información de Contacto</h2>
         <form id="informacion-form" method="post">
             {% csrf_token %}
-            <label for="direccion">Dirección:</label>
-            <input type="text" id="direccion" name="direccion" required><br>
-            <label for="correo">Correo:</label>
-            <input type="email" id="correo" name="correo" required><br>
-            <label for="rut">RUT:</label>
-            <input type="text" id="rut" name="rut" required><br>
+            <div class="envio-options">
+                <label for="envio">¿Desea envío?</label>
+                <label>
+                    <span>Sí</span>
+                    <input type="radio" name="envio" value="si" onclick="seleccionarEnvio(true)">
+                </label>
+                <label>
+                    <span>No</span>
+                    <input type="radio" name="envio" value="no" onclick="seleccionarEnvio(false)" checked>
+                </label>
+            </div>
+            <div id="direccion-container" class="direccion-container" style="display:none;">
+                <label for="direccion">
+                    <span>Dirección:</span>
+                </label>
+                <input type="text" id="direccion" name="direccion">
+            </div>
             <button type="button" id="confirmar-btn">Confirmar</button>
         </form>
     </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('confirmar-btn').addEventListener('click', function() {
-            var direccion = document.getElementById('direccion').value;
-            var correo = document.getElementById('correo').value;
-            var rut = document.getElementById('rut').value;
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var productos = [];
+            var costoEnvio = 3000;
+            var envioSeleccionado = false;
 
-            if (!direccion || !correo || !rut) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Por favor, complete todos los campos de información de contacto.'
+            function actualizarTabla() {
+                var tbody = document.getElementById('productos-tbody');
+                tbody.innerHTML = '';
+                var totalPrecio = 0;
+
+                productos.forEach(function(producto) {
+                    var row = document.createElement('tr');
+
+                    var nombreCell = document.createElement('td');
+                    nombreCell.textContent = producto.nombre;
+                    row.appendChild(nombreCell);
+
+                    var cantidadCell = document.createElement('td');
+                    cantidadCell.textContent = producto.cantidad;
+                    row.appendChild(cantidadCell);
+
+                    var precioCell = document.createElement('td');
+                    precioCell.textContent = producto.precio.toFixed(0);
+                    row.appendChild(precioCell);
+
+                    tbody.appendChild(row);
+
+                    totalPrecio += producto.cantidad * producto.precio;
                 });
-            } else {
-                $.ajax({
-                    type: 'POST',
-                    url: '{% url "guardar_orden_de_compra" %}',
-                    data: $('#informacion-form').serialize(),
-                    success: function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Éxito',
-                                text: response.success
-                            }).then(function() {
-                                location.reload();
-                            });
-                        } else if (response.error) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: response.error
-                            });
-                        }
-                    }
-                });
+
+                if (envioSeleccionado) {
+                    totalPrecio += costoEnvio;
+                }
+
+                document.getElementById('total-precio').textContent = totalPrecio.toFixed(0);
             }
-        });
-    });
-</script>
-<script>
-    $(document).ready(function() {
-        $('#agregar-form').on('submit', function(e) {
-            e.preventDefault();
-    
-            var nombre = $('#nombre').val();
-            var cantidad = $('#cantidad').val();
-            var precio = $('#precio').val();
-    
-            $.ajax({
-                url: '',
-                method: 'POST',
-                data: {
-                    'agregar_producto': true,
-                    'nombre': nombre,
-                    'cantidad': cantidad,
-                    'precio': precio,
-                    'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
-                },
-                success: function(data) {
-                    // Actualiza la sección de "Productos añadidos"
-                    var producto = '<tr><td>' + data.nombre + '</td><td>' + cantidad + '</td><td>' + data.precio + '</td></tr>';
-                    $('table tbody').append(producto);
+
+            document.getElementById('agregar-producto-btn').addEventListener('click', function() {
+                var nombre = document.getElementById('nombre').value;
+                var cantidad = parseInt(document.getElementById('cantidad').value);
+                var precio = parseFloat(document.getElementById('precio').value);
+
+                var productoExistente = productos.find(function(producto) {
+                    return producto.nombre === nombre;
+                });
+
+                if (productoExistente) {
+                    productoExistente.cantidad += cantidad;
+                } else {
+                    productos.push({
+                        nombre: nombre,
+                        cantidad: cantidad,
+                        precio: precio
+                    });
+                }
+
+                actualizarTabla();
+            });
+
+            document.getElementById('confirmar-btn').addEventListener('click', function() {
+                var direccion = document.getElementById('direccion').value;
+
+                if (envioSeleccionado && !direccion) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Por favor, complete la dirección de envío.'
+                    });
+                } else {
+                    $.ajax({
+                        type: 'POST',
+                        url: '{% url "guardar_orden_de_compra" %}',
+                        data: {
+                            'direccion': envioSeleccionado ? direccion : '',
+                            'productos': JSON.stringify(productos),
+                            'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Éxito',
+                                    text: response.success
+                                }).then(function() {
+                                    location.reload();
+                                });
+                            } else if (response.error) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.error
+                                });
+                            }
+                        }
+                    });
                 }
             });
         });
-    });
+
+        function seleccionarEnvio(seleccion) {
+            envioSeleccionado = seleccion;
+            document.getElementById('direccion-container').style.display = seleccion ? 'flex' : 'none';
+            actualizarTabla();
+        }
     </script>
-    <script>
-        $(document).ready(function() {
-            $('#agregar-form').on('submit', function(e) {
-                e.preventDefault();
-        
-                var nombre = $('#nombre').val();
-                var cantidad = parseInt($('#cantidad').val());
-                var precio = parseFloat($('#precio').val());
-        
-                $.ajax({
-                    url: '',
-                    method: 'POST',
-                    data: {
-                        'agregar_producto': true,
-                        'nombre': nombre,
-                        'cantidad': cantidad,
-                        'precio': precio,
-                        'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
-                    },
-                    success: function(data) {
-                        // Busca si el producto ya existe en la tabla
-                        var existe = false;
-                        $('table tbody tr').each(function() {
-                            if ($(this).find('td:first').text() === data.nombre) {
-                                // Si el producto ya existe, actualiza la cantidad y el precio
-                                var cantidadActual = parseInt($(this).find('td:nth-child(2)').text());
-                                var precioActual = parseFloat($(this).find('td:nth-child(3)').text());
-                                $(this).find('td:nth-child(2)').text(cantidadActual + cantidad);
-                                $(this).find('td:nth-child(3)').text((precioActual + precio).toFixed(2));
-                                existe = true;
-                            }
-                        });
-        
-                        // Si el producto no existe, añádelo a la tabla
-                        if (!existe) {
-                            var producto = '<tr><td>' + data.nombre + '</td><td>' + cantidad + '</td><td>' + precio.toFixed(2) + '</td></tr>';
-                            $('table tbody').append(producto);
-                        }
-        
-                        // Actualiza el total
-                        var total = parseFloat($('.total-container p').text());
-                        total += cantidad * precio;
-                        $('.total-container p').text(total.toFixed(2));
-                    }
-                });
-            });
-        });
-        </script>
 </body>
 </html>

@@ -1,76 +1,95 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group, Permission
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 
 class MiAdministradorDeUsuarios(BaseUserManager):
-    def crear_usuario(self, nombre_usuario, contrasena=None, **extra_fields):
+    def create_user(self, nombre_usuario, password=None, **extra_fields):
         if not nombre_usuario:
             raise ValueError('Los usuarios deben tener un nombre de usuario')
+        user = self.model(nombre_usuario=nombre_usuario, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
 
-        usuario = self.model(nombre_usuario=nombre_usuario, **extra_fields)
-        usuario.set_password(contrasena)
-        usuario.save(using=self._db)
-        return usuario
+    def create_superuser(self, nombre_usuario, password, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self.create_user(nombre_usuario, password, **extra_fields)
 
-    def crear_superusuario(self, nombre_usuario, contrasena):
-        usuario = self.crear_usuario(nombre_usuario, contrasena=contrasena, es_administrador=True)
-        usuario.save(using=self._db)
-        return usuario
-
-class Usuario(AbstractBaseUser):
+class Usuario(AbstractBaseUser, PermissionsMixin):
     nombre_usuario = models.CharField(max_length=30, unique=True)
-    contrasena = models.CharField(max_length=128)
     rut = models.CharField(max_length=10)
     email = models.EmailField()
     telefono = models.CharField(max_length=20)
     direccion = models.CharField(max_length=100)
     nombre_completo = models.CharField(max_length=100)
-    esta_activo = models.BooleanField(default=True)
-    es_administrador = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
+
+    groups = models.ManyToManyField(
+        Group,
+        related_name='custom_user_groups',
+        blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        verbose_name='groups'
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name='custom_user_permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        verbose_name='user permissions'
+    )
 
     objects = MiAdministradorDeUsuarios()
 
     USERNAME_FIELD = 'nombre_usuario'
-    REQUIRED_FIELDS = ['contrasena', 'rut', 'email', 'telefono', 'direccion', 'nombre_completo']
+    REQUIRED_FIELDS = ['email', 'rut', 'telefono', 'direccion', 'nombre_completo']
 
     def __str__(self):
         return self.nombre_usuario
 
-    def has_perm(self, perm, obj=None):
-        return True
-
-    def has_module_perms(self, app_label):
-        return True
-
-    @property
-    def is_staff(self):
-        return self.es_administrador
+    class Meta:
+        verbose_name = 'usuario'
+        verbose_name_plural = 'usuarios'
 
 class Producto(models.Model):
+    id = models.AutoField(primary_key=True)  # Agregar campo id explícitamente
     nombre = models.CharField(max_length=100)
-    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    precio = models.IntegerField()
 
     def __str__(self):
         return self.nombre
 
 class OrdenDeCompra(models.Model):
+    id = models.AutoField(primary_key=True)  # Agregar campo id explícitamente
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     fecha = models.DateTimeField(auto_now_add=True)
-    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
-    total = models.DecimalField(max_digits=10, decimal_places=2)
-    descuento = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    envio = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    subtotal = models.IntegerField()
+    total = models.IntegerField()
+    descuento = models.IntegerField(null=True, blank=True)
+    envio = models.IntegerField(null=True, blank=True)
+    direccion = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return f"Orden de Compra #{self.id}"
 
 class DetallePedido(models.Model):
-    orden_de_compra = models.ForeignKey(OrdenDeCompra, on_delete=models.CASCADE)
+    id = models.AutoField(primary_key=True)  # Agregar campo id explícitamente
+    orden_de_compra = models.ForeignKey(OrdenDeCompra, on_delete=models.CASCADE, related_name='detalles')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.IntegerField()
 
+    def __str__(self):
+        return f"{self.cantidad} x {self.producto.nombre} (Orden #{self.orden_de_compra.id})"
+
 
 class CarritoDeCompra(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.IntegerField(default=1)
+
