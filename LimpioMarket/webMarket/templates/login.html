@@ -1,10 +1,9 @@
-<!-- FILEPATH: /C:/Users/DUOC/Desktop/LimpioMarket/LimpioMarket/webMarket/templates/login.html -->
-{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
     <title>Iniciar sesión</title>
     {% block css %}
+    {% load static %}
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
     {% endblock css %}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -12,6 +11,7 @@
 <body>
     <div class="container">
         <div class="login-box">
+            <img src="{% static 'img/l.png' %}" alt="Logo" class="logo">
             <h2>Iniciar sesión</h2>
             <form method="POST">
                 {% csrf_token %}

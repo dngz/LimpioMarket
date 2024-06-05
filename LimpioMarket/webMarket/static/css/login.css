@@ -52,12 +52,12 @@
 .user-box input:valid ~ label {
     top: -20px;
     left: 0;
-    color: #ff652f;
+    color: #0056b3;
     font-size: 12px;
 }
 
 button[type="submit"] {
-    background: #ff652f;
+    background: #0056b3;
     border: none;
     outline: none;
     color: #fff;
@@ -69,5 +69,10 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover {
-    background: #ff3f0f;
+    background: #0056b3;
+}
+.logo {
+    width: 200px; /* Ajusta el tamaño del logo según sea necesario */
+    margin: 0 auto 20px; /* Centra el logo y agrega espacio debajo */
+    display: block; /* Para que el margen automático funcione */
 }

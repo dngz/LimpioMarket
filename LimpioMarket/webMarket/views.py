@@ -8,10 +8,10 @@ from django.utils.safestring import mark_safe
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 import json
-from .models import Usuario, CarritoDeCompra, Producto, OrdenDeCompra, DetallePedido
+from .models import Usuario, CarritoDeCompra, Producto, OrdenDeCompra, DetallePedido, Factura
 from django.db.models import F, Sum
-
-
+from django.utils.crypto import get_random_string
+from django.utils import timezone
 def index(request):
     return render(request, 'index.html')
 
@@ -96,14 +96,45 @@ def login(request):
 
 @login_required
 def lista_productos(request):
-    ordenes = OrdenDeCompra.objects.all().prefetch_related('detalles__producto')
-    ordenes_con_total = []
+    usuario = request.user
+    ordenes = OrdenDeCompra.objects.filter(usuario=usuario).prefetch_related('detalles__producto')
+    ordenes_con_factura = []
 
     for orden in ordenes:
-        total = orden.detalles.aggregate(total=Sum(F('cantidad') * F('producto__precio')))['total'] or 0
-        ordenes_con_total.append({
+        impuestos = int(orden.subtotal * 0.19)
+        total_factura = orden.subtotal + impuestos
+
+        factura, created = Factura.objects.get_or_create(
+            orden_de_compra=orden,
+            defaults={
+                'numero_factura': get_random_string(length=10, allowed_chars='0123456789'),
+                'subtotal': orden.subtotal,
+                'impuestos': impuestos,
+                'total': total_factura,
+                'fecha_emision': timezone.now()
+            }
+        )
+        if not created:
+            if factura.total != total_factura:
+                factura.subtotal = orden.subtotal
+                factura.impuestos = impuestos
+                factura.total = total_factura
+                factura.save()
+
+        detalles_con_totales = [
+            {
+                'producto': detalle.producto,
+                'cantidad': detalle.cantidad,
+                'total': detalle.cantidad * detalle.producto.precio
+            }
+            for detalle in orden.detalles.all()
+        ]
+
+        ordenes_con_factura.append({
             'orden': orden,
-            'total': total,
+            'factura': factura,
+            'total': orden.detalles.aggregate(total=Sum(F('cantidad') * F('producto__precio')))['total'] or 0,
+            'detalles': detalles_con_totales
         })
 
-    return render(request, 'lista.html', {'ordenes_con_total': ordenes_con_total})
+    return render(request, 'lista.html', {'ordenes_con_factura': ordenes_con_factura})

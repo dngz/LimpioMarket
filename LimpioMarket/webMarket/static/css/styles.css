@@ -37,7 +37,7 @@ h1, h2 {
 }
 
 .form-container form button {
-    background-color: #5cb85c;
+    background-color: #0056b3;
     color: #fff;
     border: none;
     cursor: pointer;
@@ -45,7 +45,7 @@ h1, h2 {
 }
 
 .form-container form button:hover {
-    background-color: #4cae4c;
+    background-color: #0056b3;
 }
 
 table {
@@ -85,7 +85,7 @@ td {
 }
 
 .contact-info form button {
-    background-color: #5cb85c;
+    background-color: #0056b3;
     color: #fff;
     border: none;
     cursor: pointer;
@@ -93,5 +93,5 @@ td {
 }
 
 .contact-info form button:hover {
-    background-color: #4cae4c;
+    background-color: #0056b3;
 }

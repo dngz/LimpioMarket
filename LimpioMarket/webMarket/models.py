@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
+from django.utils import timezone
 
 class MiAdministradorDeUsuarios(BaseUserManager):
     def create_user(self, nombre_usuario, password=None, **extra_fields):
@@ -93,3 +93,13 @@ class CarritoDeCompra(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.IntegerField(default=1)
 
+class Factura(models.Model):
+    orden_de_compra = models.OneToOneField(OrdenDeCompra, on_delete=models.CASCADE)
+    numero_factura = models.CharField(max_length=10, unique=True)
+    subtotal = models.IntegerField()
+    impuestos = models.IntegerField()
+    total = models.IntegerField()
+    fecha_emision = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.numero_factura
