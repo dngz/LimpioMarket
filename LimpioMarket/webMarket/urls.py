@@ -7,4 +7,5 @@ urlpatterns = [
     path('guardar_orden_de_compra/', guardar_orden_de_compra, name='guardar_orden_de_compra'),
     path('login/',login,name='LOGIN'),
     path('lista_productos/', lista_productos, name='lista_productos'),
+    path('logout/', logout_view, name='logout')
 ]

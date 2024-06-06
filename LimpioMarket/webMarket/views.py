@@ -12,7 +12,7 @@ from .models import Usuario, CarritoDeCompra, Producto, OrdenDeCompra, DetallePe
 from django.db.models import F, Sum
 from django.utils.crypto import get_random_string
 from django.utils import timezone
-
+from django.contrib.auth import logout as auth_logout
 def index(request):
     return render(request, 'index.html')
 
@@ -87,7 +87,6 @@ def login(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 auth_login(request, user)
-                messages.success(request, f"¡Bienvenido, {username}!")
                 return redirect('lista_productos')
             else:
                 messages.error(request, "Usuario o contraseña incorrectos.")
@@ -157,3 +156,6 @@ def lista_productos(request):
 
     return render(request, 'lista.html', {'ordenes_con_factura': ordenes_con_factura, 'es_superusuario': request.user.is_superuser})
 
+def logout_view(request):
+    auth_logout(request)
+    return redirect('LOGIN') 
