@@ -12,11 +12,16 @@ from .models import Usuario, CarritoDeCompra, Producto, OrdenDeCompra, DetallePe
 from django.db.models import F, Sum
 from django.utils.crypto import get_random_string
 from django.utils import timezone
+
 def index(request):
     return render(request, 'index.html')
 
 @login_required
 def orden_de_compra(request):
+    if request.user.is_superuser:
+        messages.error(request, "Los superusuarios no pueden crear órdenes de compra.")
+        return redirect('lista_productos')
+
     try:
         usuario = Usuario.objects.get(nombre_usuario=request.user.nombre_usuario)
     except Usuario.DoesNotExist:
@@ -30,6 +35,9 @@ def orden_de_compra(request):
 
 @login_required
 def guardar_orden_de_compra(request):
+    if request.user.is_superuser:
+        return JsonResponse({'error': 'Los superusuarios no pueden crear órdenes de compra.'})
+
     if request.method == 'POST':
         direccion = request.POST.get('direccion', '')
         productos_json = request.POST.get('productos')
@@ -87,7 +95,7 @@ def login(request):
             messages.error(request, "Formulario inválido.")
     else:
         form = AuthenticationForm()
-    
+
     storage = get_messages(request)
     message_list = [{'message': message.message, 'tags': message.tags} for message in storage]
     message_json = mark_safe(json.dumps(message_list))
@@ -97,44 +105,55 @@ def login(request):
 @login_required
 def lista_productos(request):
     usuario = request.user
-    ordenes = OrdenDeCompra.objects.filter(usuario=usuario).prefetch_related('detalles__producto')
-    ordenes_con_factura = []
 
-    for orden in ordenes:
-        impuestos = int(orden.subtotal * 0.19)
-        total_factura = orden.subtotal + impuestos
+    if request.user.is_superuser:
+        # Si el usuario es un superusuario, simplemente pasamos una lista vacía de órdenes
+        ordenes_con_factura = []
+    else:
+        try:
+            usuario = Usuario.objects.get(nombre_usuario=usuario.nombre_usuario)
+        except Usuario.DoesNotExist:
+            return HttpResponseForbidden("El usuario no existe.")
 
-        factura, created = Factura.objects.get_or_create(
-            orden_de_compra=orden,
-            defaults={
-                'numero_factura': get_random_string(length=10, allowed_chars='0123456789'),
-                'subtotal': orden.subtotal,
-                'impuestos': impuestos,
-                'total': total_factura,
-                'fecha_emision': timezone.now()
-            }
-        )
-        if not created:
-            if factura.total != total_factura:
-                factura.subtotal = orden.subtotal
-                factura.impuestos = impuestos
-                factura.total = total_factura
-                factura.save()
+        ordenes = OrdenDeCompra.objects.filter(usuario=usuario).prefetch_related('detalles__producto')
+        ordenes_con_factura = []
 
-        detalles_con_totales = [
-            {
-                'producto': detalle.producto,
-                'cantidad': detalle.cantidad,
-                'total': detalle.cantidad * detalle.producto.precio
-            }
-            for detalle in orden.detalles.all()
-        ]
+        for orden in ordenes:
+            impuestos = int(orden.subtotal * 0.19)
+            total_factura = orden.subtotal + impuestos
 
-        ordenes_con_factura.append({
-            'orden': orden,
-            'factura': factura,
-            'total': orden.detalles.aggregate(total=Sum(F('cantidad') * F('producto__precio')))['total'] or 0,
-            'detalles': detalles_con_totales
-        })
+            factura, created = Factura.objects.get_or_create(
+                orden_de_compra=orden,
+                defaults={
+                    'numero_factura': get_random_string(length=10, allowed_chars='0123456789'),
+                    'subtotal': orden.subtotal,
+                    'impuestos': impuestos,
+                    'total': total_factura,
+                    'fecha_emision': timezone.now()
+                }
+            )
+            if not created:
+                if factura.total != total_factura:
+                    factura.subtotal = orden.subtotal
+                    factura.impuestos = impuestos
+                    factura.total = total_factura
+                    factura.save()
 
-    return render(request, 'lista.html', {'ordenes_con_factura': ordenes_con_factura})
+            detalles_con_totales = [
+                {
+                    'producto': detalle.producto,
+                    'cantidad': detalle.cantidad,
+                    'total': detalle.cantidad * detalle.producto.precio
+                }
+                for detalle in orden.detalles.all()
+            ]
+
+            ordenes_con_factura.append({
+                'orden': orden,
+                'factura': factura,
+                'total': orden.detalles.aggregate(total=Sum(F('cantidad') * F('producto__precio')))['total'] or 0,
+                'detalles': detalles_con_totales
+            })
+
+    return render(request, 'lista.html', {'ordenes_con_factura': ordenes_con_factura, 'es_superusuario': request.user.is_superuser})
+

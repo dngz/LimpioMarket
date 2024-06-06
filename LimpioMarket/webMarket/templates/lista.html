@@ -5,6 +5,7 @@
     <title>Lista de Órdenes y Facturas</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/lista.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -148,9 +149,23 @@
         </div>
         {% endfor %}
         <div class="button-container">
-            <a href="{% url 'orden_de_compra' %}" class="btn"><button class="btn">Nueva Orden de Compra</button></a>
+            <a href="{% url 'orden_de_compra' %}" class="btn"><button class="btn" id="nuevaOrdenCompraBtn">Nueva Orden de Compra</button></a>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if es_superusuario %}
+            document.getElementById('nuevaOrdenCompraBtn').addEventListener('click', function(event) {
+                event.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Acceso Denegado',
+                    text: 'Los superusuarios no pueden crear órdenes de compra.'
+                });
+            });
+            {% endif %}
+        });
+    </script>
 </body>
 
 </html>
