@@ -95,3 +95,19 @@ td {
 .contact-info form button:hover {
     background-color: #0056b3;
 }
+
+.back-button {
+    background-color: #0056b3;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    margin: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-right: 90%;
+}
+
+.back-button:hover {
+    background-color: #004494;
+}
