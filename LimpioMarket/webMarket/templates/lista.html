@@ -6,6 +6,8 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/lista.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
 </head>
 
 <body>
@@ -110,44 +112,51 @@
             <h2>Factura</h2>
             <div class="info-container">
                 <table class="factura-tabla">
-                    <tr>
-                        <td colspan="4"><strong>ID de Factura:</strong> {{ item.factura.numero_factura }}</td>
-                    </tr>
-                    <tr>
-                        <th>Productos</th>
-                        <th>Cantidad</th>
-                        <th>Precio Unitario</th>
-                        <th>Total</th>
-                    </tr>
-                    {% for detalle in item.detalles %}
-                    <tr>
-                        <td>{{ detalle.producto.nombre }}</td>
-                        <td>{{ detalle.cantidad }}</td>
-                        <td>{{ detalle.producto.precio }}</td>
-                        <td>{{ detalle.total }}</td>
-                    </tr>
-                    {% endfor %}
-                    <tr>
-                        <td colspan="3" style="text-align: right;"><strong>Subtotal:</strong></td>
-                        <td>{{ item.factura.subtotal|floatformat:0 }}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" style="text-align: right;"><strong>IVA(19%):</strong></td>
-                        <td>{{ item.factura.impuestos|floatformat:0 }}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" style="text-align: right;"><strong>Descuento:</strong></td>
-                        <td>0</td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" style="text-align: right;"><strong>Envio:</strong></td>
-                        <td>0</td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" style="text-align: right;"><strong>Total Factura:</strong></td>
-                        <td>{{ item.factura.total|floatformat:0 }}</td>
-                    </tr>
+                    <thead>
+                        <tr>
+                            <td colspan="4"><strong>ID de Factura:</strong> {{ item.factura.numero_factura }}</td>
+                        </tr>
+                        <tr>
+                            <th>Productos</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalle in item.detalles %}
+                        <tr>
+                            <td>{{ detalle.producto.nombre }}</td>
+                            <td>{{ detalle.cantidad }}</td>
+                            <td>{{ detalle.producto.precio }}</td>
+                            <td>{{ detalle.total }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                            <td colspan="3" style="text-align: right;"><strong>Subtotal:</strong></td>
+                            <td>{{ item.factura.subtotal|floatformat:0 }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" style="text-align: right;"><strong>IVA(19%):</strong></td>
+                            <td>{{ item.factura.impuestos|floatformat:0 }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" style="text-align: right;"><strong>Descuento:</strong></td>
+                            <td>0</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" style="text-align: right;"><strong>Envio:</strong></td>
+                            <td>0</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" style="text-align: right;"><strong>Total Factura:</strong></td>
+                            <td>{{ item.factura.total|floatformat:0 }}</td>
+                        </tr>
+                    </tbody>
                 </table>
+            </div>
+            <div class="button-container">
+                <button class="btn exportar-pdf" data-factura-id="{{ item.factura.numero_factura }}">Exportar como PDF</button>
             </div>
         </div>
         {% endfor %}
@@ -157,6 +166,59 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const { jsPDF } = window.jspdf;
+    
+            document.querySelectorAll('.exportar-pdf').forEach(button => {
+                button.addEventListener('click', function() {
+                    const facturaId = this.dataset.facturaId;
+                    const facturaElement = this.closest('.orden');
+                    const doc = new jsPDF();
+    
+                    // Set initial y coordinate for text and tables
+                    let y = 10;
+    
+                    // Add Factura title
+                    doc.text('Factura', 10, y);
+                    y += 10;
+    
+                    // Información de la factura
+                    doc.autoTable({
+                        startY: y,
+                        html: facturaElement.querySelector('.info-container table')
+                    });
+                    y = doc.lastAutoTable.finalY + 10; // Update y coordinate
+    
+                    // Información del vendedor
+                    doc.text('Vendedor', 10, y);
+                    y += 10;
+                    doc.autoTable({
+                        startY: y,
+                        html: facturaElement.querySelector('.vendedor table')
+                    });
+                    y = doc.lastAutoTable.finalY + 10; // Update y coordinate
+    
+                    // Información del comprador
+                    doc.text('Comprador', 10, y);
+                    y += 10;
+                    doc.autoTable({
+                        startY: y,
+                        html: facturaElement.querySelector('.comprador table')
+                    });
+                    y = doc.lastAutoTable.finalY + 10; // Update y coordinate
+    
+                    // Detalles de la factura
+                    doc.text('Detalles de la Factura', 10, y);
+                    y += 10;
+                    doc.autoTable({
+                        startY: y,
+                        html: facturaElement.querySelector('.factura-tabla')
+                    });
+    
+                    // Save the PDF with the factura ID
+                    doc.save(`Factura-${facturaId}.pdf`);
+                });
+            });
+    
             {% if es_superusuario %}
             document.getElementById('nuevaOrdenCompraBtn').addEventListener('click', function(event) {
                 event.preventDefault();
@@ -168,7 +230,7 @@
             });
             {% endif %}
         });
-    </script>
+    </script>    
 </body>
 
 </html>
