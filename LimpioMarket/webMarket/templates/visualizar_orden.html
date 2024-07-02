@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Visualizar y Actualizar Orden</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/visualizar_orden.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Visualizar y Actualizar Orden</h1>
+        <form id="updateForm">
+            <h2>Información de la Orden</h2>
+            <table>
+                <tr>
+                    <td>ID de Orden:</td>
+                    <td>{{ orden.id }}</td>
+                </tr>
+                <tr>
+                    <td>Usuario:</td>
+                    <td><input type="text" name="nombre_usuario" value="{{ orden.usuario.nombre_usuario }}"></td>
+                </tr>
+                <tr>
+                    <td>Nombre Completo:</td>
+                    <td><input type="text" name="nombre_completo" value="{{ orden.usuario.nombre_completo }}"></td>
+                </tr>
+                <tr>
+                    <td>RUT:</td>
+                    <td><input type="text" name="rut" value="{{ orden.usuario.rut }}"></td>
+                </tr>
+                <tr>
+                    <td>Email:</td>
+                    <td><input type="email" name="email" value="{{ orden.usuario.email }}"></td>
+                </tr>
+                <tr>
+                    <td>Teléfono:</td>
+                    <td><input type="text" name="telefono" value="{{ orden.usuario.telefono }}"></td>
+                </tr>
+                <tr>
+                    <td>Dirección:</td>
+                    <td><input type="text" name="direccion" value="{{ orden.usuario.direccion }}"></td>
+                </tr>
+                <tr>
+                    <td>Fecha:</td>
+                    <td>{{ orden.fecha }}</td>
+                </tr>
+                <tr>
+                    <td>Total Orden:</td>
+                    <td>{{ orden.total }}</td>
+                </tr>
+            </table>
+            <h2>Detalles de la Orden</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unitario</th>
+                        <th>Total Actual Unitario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detalle in detalles %}
+                    <tr>
+                        <td>
+                            <input type="text" name="nombre_producto_{{ detalle.id }}" value="{{ detalle.producto.nombre }}">
+                        </td>
+                        <td>
+                            <input type="number" name="cantidad_{{ detalle.id }}" value="{{ detalle.cantidad }}">
+                        </td>
+                        <td>
+                            <input type="number" name="precio_producto_{{ detalle.id }}" value="{{ detalle.producto.precio }}">
+                        </td>
+                        <td>{{ detalle.producto.precio }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="button-container">
+                <button type="button" class="btn actualizar-orden" data-orden-id="{{ orden.id }}">Actualizar Orden</button>
+            </div>
+        </form>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.actualizar-orden').addEventListener('click', function() {
+                const ordenId = this.dataset.ordenId;
+                const form = document.getElementById('updateForm');
+                const formData = new FormData(form);
+
+                fetch(`/actualizar-orden/${ordenId}/`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Éxito',
+                            text: data.success
+                        }).then(() => {
+                            location.reload(); // Recargar la página para reflejar los cambios
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.error
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Ocurrió un error al actualizar la orden.'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

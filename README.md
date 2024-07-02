@@ -7,22 +7,29 @@ LimpioMarket es una aplicación web desarrollada con Django que facilita la gest
 El objetivo principal de LimpioMarket es mejorar la eficiencia operativa, optimizar la experiencia del usuario y fortalecer la competitividad en el mercado de suministros de limpieza y artículos de aseo. Se enfatiza la importancia del uso de GitHub para el trabajo cooperativo entre usuarios, facilitando la colaboración, el control de versiones y la integración continua en el desarrollo del proyecto.
 
 ## Instalación y Uso
-1. Clona este repositorio en tu máquina local.
-2. Activa el EntornoVirtual de la aplicación
-```
-EntornoMarket\Scripts\activate
-```
-3. Instala las dependencias necesarias utilizando pip:
-```
-cd LimpioMarket
-```
-   
-```
-pip install -r requirements.txt
-```
+### Clonar el Repositorio
 
-4. Inicia el servidor local:
-```
-python manage.py runserver
-```
-5. Accede a la aplicación desde tu navegador web utilizando la dirección http://localhost:8000.
+1. **Abrir Git Bash y clonar el repositorio:**
+   ```bash
+   git clone https://github.com/dngz/LimpioMarket
+   
+2. **Cerrar Git Bash y abrir el CMD (Símbolo del sistema) en el directorio del proyecto.**
+3. **Iniciar el entorno virtual de la aplicación:**
+   
+   ```
+   EntornoMarket\Scripts\activate
+   ```
+4. **Instala las dependencias necesarias utilizando pip:**
+   ```
+   cd LimpioMarket
+   ```
+   
+   ```
+   pip install -r requirements.txt
+   ```
+
+5. **Inicia el servidor local:**
+   ```
+   python manage.py runserver
+   ```
+6. **Accede a la aplicación desde tu navegador web utilizando la dirección http://localhost:8000.**

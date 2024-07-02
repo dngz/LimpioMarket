@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseForbidden
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
@@ -13,6 +13,8 @@ from django.db.models import F, Sum
 from django.utils.crypto import get_random_string
 from django.utils import timezone
 from django.contrib.auth import logout as auth_logout
+from django.views.decorators.csrf import csrf_exempt
+
 def index(request):
     return render(request, 'index.html')
 
@@ -77,6 +79,84 @@ def guardar_orden_de_compra(request):
             return JsonResponse({'error': f'Ocurrió un error al guardar la orden de compra: {str(e)}'})
 
     return JsonResponse({'error': 'Método no permitido.'})
+
+def visualizar_orden(request, orden_id):
+    orden = get_object_or_404(OrdenDeCompra, id=orden_id)
+    detalles = DetallePedido.objects.filter(orden_de_compra=orden)
+    return render(request, 'visualizar_orden.html', {
+        'orden': orden,
+        'detalles': detalles,
+    })
+
+@csrf_exempt
+def actualizar_orden(request, orden_id):
+    if request.method == 'POST':
+        orden = get_object_or_404(OrdenDeCompra, id=orden_id)
+        detalles = DetallePedido.objects.filter(orden_de_compra=orden)
+
+        try:
+            # Actualizar información del usuario
+            usuario = orden.usuario
+            usuario.nombre_usuario = request.POST['nombre_usuario']
+            usuario.nombre_completo = request.POST['nombre_completo']
+            usuario.rut = request.POST['rut']
+            usuario.email = request.POST['email']
+            usuario.telefono = request.POST['telefono']
+            usuario.direccion = request.POST['direccion']
+            usuario.save()
+
+            # Bandera para detectar cambios
+            cambios_realizados = False
+
+            # Actualizar los detalles de la orden y los productos
+            for detalle in detalles:
+                cantidad = request.POST.get(f'cantidad_{detalle.id}')
+                if cantidad and int(cantidad) != detalle.cantidad:
+                    detalle.cantidad = int(cantidad)
+                    cambios_realizados = True
+
+                # Actualizar nombre y precio del producto si están presentes en el POST data
+                nuevo_nombre = request.POST.get(f'nombre_producto_{detalle.id}')
+                nuevo_precio = request.POST.get(f'precio_producto_{detalle.id}')
+
+                if nuevo_nombre and nuevo_nombre != detalle.producto.nombre:
+                    detalle.producto.nombre = nuevo_nombre
+                    cambios_realizados = True
+                if nuevo_precio and int(nuevo_precio) != detalle.producto.precio:
+                    detalle.producto.precio = int(nuevo_precio)
+                    cambios_realizados = True
+
+                detalle.producto.save()
+                detalle.save()
+
+            if cambios_realizados:
+                # Calcular los totales actualizados
+                subtotal_actualizado = sum(detalle.cantidad * detalle.producto.precio for detalle in detalles)
+                impuestos_actualizados = int(subtotal_actualizado * 0.19)
+                total_actualizado = subtotal_actualizado + impuestos_actualizados
+
+                # Actualizar la orden
+                orden.subtotal = subtotal_actualizado
+                orden.total = total_actualizado
+                orden.save()
+
+                # Actualizar la factura asociada a la orden, si existe
+                factura = Factura.objects.filter(orden_de_compra=orden).first()
+                if factura:
+                    factura.subtotal = subtotal_actualizado
+                    factura.impuestos = impuestos_actualizados
+                    factura.total = total_actualizado
+                    factura.condicion = 'rectificado'  # Cambiar la condición a "rectificado"
+                    factura.save()
+
+                return JsonResponse({'success': 'Orden actualizada con éxito.'})
+            else:
+                return JsonResponse({'success': 'No se realizaron cambios en la orden.'})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Método no permitido.'})
 
 def login(request):
     if request.method == 'POST':
