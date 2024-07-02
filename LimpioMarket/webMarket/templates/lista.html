@@ -116,6 +116,9 @@
                         <tr>
                             <td colspan="4"><strong>ID de Factura:</strong> {{ item.factura.numero_factura }}</td>
                         </tr>
+                        {% if item.factura.condicion == "rectificado" %}
+                            <td colspan="4" style="color: red;"><h5>*Factura rectificada</h5></td>
+                        {% endif %}
                         <tr>
                             <th>Productos</th>
                             <th>Cantidad</th>
@@ -157,8 +160,9 @@
             </div>
             <div class="button-container">
                 <button class="btn exportar-pdf" data-factura-id="{{ item.factura.numero_factura }}">Exportar como PDF</button>
+                <a href="{% url 'visualizar_orden' item.orden.id %}" class="btn modificar-orden">Modificar Orden</a>
             </div>
-        </div>
+            
         {% endfor %}
         <div class="button-container">
             <a href="{% url 'orden_de_compra' %}" class="btn"><button class="btn" id="nuevaOrdenCompraBtn">Nueva Orden de Compra</button></a>

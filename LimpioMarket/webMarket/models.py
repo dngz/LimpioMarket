@@ -100,6 +100,7 @@ class Factura(models.Model):
     impuestos = models.IntegerField()
     total = models.IntegerField()
     fecha_emision = models.DateTimeField(default=timezone.now)
+    condicion = models.CharField(max_length=20, default='creada')
 
     def __str__(self):
         return self.numero_factura
