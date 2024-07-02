@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Modificar Estado de Orden</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/lista.css' %}">
+</head>
+<body>
+    <div class="container">
+        <h1>Modificar Estado de Orden</h1>
+        <form method="post">
+            {% csrf_token %}
+            <label for="estado">Estado:</label>
+            <select id="estado" name="estado">
+                <option value="entregado">Entregado</option>
+                <option value="rechazado">Rechazado</option>
+            </select>
+            <br>
+            <label for="motivo">Motivo:</label>
+            <textarea id="motivo" name="motivo" required></textarea>
+            <br>
+            <button type="submit" class="btn">Guardar</button>
+        </form>
+    </div>
+</body>
+</html>

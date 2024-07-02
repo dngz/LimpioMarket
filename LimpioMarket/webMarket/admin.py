@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import Usuario, Producto, OrdenDeCompra, DetallePedido
+from .models import Usuario, Producto, OrdenDeCompra, DetallePedido, Factura, DetalleEstado
 from .forms import UsuarioCreacionForm, UsuarioCambioForm
 
 class UsuarioAdmin(BaseUserAdmin):
@@ -46,3 +46,5 @@ admin.site.register(Usuario, UsuarioAdmin)
 admin.site.register(Producto, ProductoAdmin)
 admin.site.register(OrdenDeCompra, OrdenDeCompraAdmin)
 admin.site.register(DetallePedido, DetallePedidoAdmin)
+admin.site.register(Factura)
+admin.site.register(DetalleEstado)

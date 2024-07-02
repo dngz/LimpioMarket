@@ -101,6 +101,17 @@ class Factura(models.Model):
     total = models.IntegerField()
     fecha_emision = models.DateTimeField(default=timezone.now)
     condicion = models.CharField(max_length=20, default='creada')
+    estado = models.CharField(max_length=20, default='Por entregar')
+    motivo = models.TextField(null=True, blank=True)  # Añadir el campo motivo
 
     def __str__(self):
         return self.numero_factura
+
+class DetalleEstado(models.Model):
+    factura = models.ForeignKey(Factura, related_name='detalles_estado', on_delete=models.CASCADE)
+    estado = models.CharField(max_length=20)
+    motivo = models.TextField()
+    fecha_cambio = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.factura.numero_factura} - {self.estado} - {self.motivo}"

@@ -7,9 +7,13 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
+    <div class="back-button-container" style="text-align: center; margin-bottom: 20px;">
+        <button onclick="location.href='{% url 'lista_productos' %}'" class="back-button">Volver</button>
+    </div>
     <div class="container">
         <h1>Visualizar y Actualizar Orden</h1>
-        <form id="updateForm">
+        <form id="updateForm" method="post" action="{% url 'actualizar_orden' orden.id %}">
+            {% csrf_token %}
             <h2>Información de la Orden</h2>
             <table>
                 <tr>
@@ -45,8 +49,24 @@
                     <td>{{ orden.fecha }}</td>
                 </tr>
                 <tr>
+                    <td>Subtotal:</td>
+                    <td>{{ subtotal }}</td>
+                </tr>
+                <tr>
+                    <td>IVA:</td>
+                    <td>{{ iva }}</td>
+                </tr>
+                <tr>
+                    <td>Descuento:</td>
+                    <td>{{ descuento }}</td>
+                </tr>
+                <tr>
+                    <td>Envío:</td>
+                    <td>{{ envio }}</td>
+                </tr>
+                <tr>
                     <td>Total Orden:</td>
-                    <td>{{ orden.total }}</td>
+                    <td>{{ total }}</td>
                 </tr>
             </table>
             <h2>Detalles de la Orden</h2>
@@ -63,32 +83,32 @@
                     {% for detalle in detalles %}
                     <tr>
                         <td>
-                            <input type="text" name="nombre_producto_{{ detalle.id }}" value="{{ detalle.producto.nombre }}">
+                            <input type="text" name="nombre_producto_{{ detalle.detalle.id }}" value="{{ detalle.detalle.producto.nombre }}">
                         </td>
                         <td>
-                            <input type="number" name="cantidad_{{ detalle.id }}" value="{{ detalle.cantidad }}">
+                            <input type="number" name="cantidad_{{ detalle.detalle.id }}" value="{{ detalle.detalle.cantidad }}">
                         </td>
                         <td>
-                            <input type="number" name="precio_producto_{{ detalle.id }}" value="{{ detalle.producto.precio }}">
+                            <input type="number" name="precio_producto_{{ detalle.detalle.id }}" value="{{ detalle.detalle.producto.precio }}">
                         </td>
-                        <td>{{ detalle.producto.precio }}</td>
+                        <td>{{ detalle.total }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             <div class="button-container">
-                <button type="button" class="btn actualizar-orden" data-orden-id="{{ orden.id }}">Actualizar Orden</button>
+                <button type="submit" class="btn actualizar-orden">Actualizar Orden</button>
             </div>
         </form>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelector('.actualizar-orden').addEventListener('click', function() {
-                const ordenId = this.dataset.ordenId;
-                const form = document.getElementById('updateForm');
+            const form = document.getElementById('updateForm');
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
                 const formData = new FormData(form);
 
-                fetch(`/actualizar-orden/${ordenId}/`, {
+                fetch(form.action, {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -103,7 +123,7 @@
                             title: 'Éxito',
                             text: data.success
                         }).then(() => {
-                            location.reload(); // Recargar la página para reflejar los cambios
+                            window.location.reload(); // Recargar la página completa
                         });
                     } else {
                         Swal.fire({

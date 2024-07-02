@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>Lista de Órdenes y Facturas</title>
     {% load static %}
@@ -9,7 +8,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
 </head>
-
 <body>
     <div class="button-container">
         <a href="{% url 'logout' %}" class="btn" id="logoutBtn" style="margin-right: 80%;">Logout</a>
@@ -116,6 +114,12 @@
                         <tr>
                             <td colspan="4"><strong>ID de Factura:</strong> {{ item.factura.numero_factura }}</td>
                         </tr>
+                        <tr>
+                            <td colspan="4"><strong>Estado:</strong> {{ item.factura.estado }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Motivo:</strong> {{ item.factura.motivo }}</td> <!-- Nuevo campo -->
+                        </tr>
                         {% if item.factura.condicion == "rectificado" %}
                             <td colspan="4" style="color: red;"><h5>*Factura rectificada</h5></td>
                         {% endif %}
@@ -160,38 +164,44 @@
             </div>
             <div class="button-container">
                 <button class="btn exportar-pdf" data-factura-id="{{ item.factura.numero_factura }}">Exportar como PDF</button>
-                <a href="{% url 'visualizar_orden' item.orden.id %}" class="btn modificar-orden">Modificar Orden</a>
+                {% if not es_superusuario %}
+                    <a href="{% url 'visualizar_orden' item.orden.id %}" class="btn modificar-orden">Modificar Orden</a>
+                {% else %}
+                    <button class="btn modificar-estado" data-orden-id="{{ item.orden.id }}">Modificar Estado</button>
+                {% endif %}
             </div>
-            
-        {% endfor %}
-        <div class="button-container">
-            <a href="{% url 'orden_de_compra' %}" class="btn"><button class="btn" id="nuevaOrdenCompraBtn">Nueva Orden de Compra</button></a>
         </div>
+        {% endfor %}
+        {% if not es_superusuario %}
+            <div class="button-container">
+                <a href="{% url 'orden_de_compra' %}" class="btn"><button class="btn" id="nuevaOrdenCompraBtn">Nueva Orden de Compra</button></a>
+            </div>
+        {% endif %}
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const { jsPDF } = window.jspdf;
-    
+
             document.querySelectorAll('.exportar-pdf').forEach(button => {
                 button.addEventListener('click', function() {
                     const facturaId = this.dataset.facturaId;
                     const facturaElement = this.closest('.orden');
                     const doc = new jsPDF();
-    
+
                     // Set initial y coordinate for text and tables
                     let y = 10;
-    
+
                     // Add Factura title
                     doc.text('Factura', 10, y);
                     y += 10;
-    
+
                     // Información de la factura
                     doc.autoTable({
                         startY: y,
                         html: facturaElement.querySelector('.info-container table')
                     });
                     y = doc.lastAutoTable.finalY + 10; // Update y coordinate
-    
+
                     // Información del vendedor
                     doc.text('Vendedor', 10, y);
                     y += 10;
@@ -200,7 +210,7 @@
                         html: facturaElement.querySelector('.vendedor table')
                     });
                     y = doc.lastAutoTable.finalY + 10; // Update y coordinate
-    
+
                     // Información del comprador
                     doc.text('Comprador', 10, y);
                     y += 10;
@@ -209,32 +219,63 @@
                         html: facturaElement.querySelector('.comprador table')
                     });
                     y = doc.lastAutoTable.finalY + 10; // Update y coordinate
-    
-                    // Detalles de la factura
+
+                    // Información de la factura
                     doc.text('Detalles de la Factura', 10, y);
                     y += 10;
                     doc.autoTable({
                         startY: y,
                         html: facturaElement.querySelector('.factura-tabla')
                     });
-    
-                    // Save the PDF with the factura ID
-                    doc.save(`Factura-${facturaId}.pdf`);
-                });
-            });
-    
-            {% if es_superusuario %}
-            document.getElementById('nuevaOrdenCompraBtn').addEventListener('click', function(event) {
-                event.preventDefault();
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Acceso Denegado',
-                    text: 'Los superusuarios no pueden crear órdenes de compra.'
-                });
-            });
-            {% endif %}
-        });
-    </script>    
-</body>
 
+                    // Save the PDF
+                    doc.save(`factura_${facturaId}.pdf`);
+                });
+            });
+
+            document.querySelectorAll('.modificar-estado').forEach(button => {
+                button.addEventListener('click', function() {
+                    const ordenId = this.dataset.ordenId;
+                    Swal.fire({
+                        title: 'Modificar Estado de la Factura',
+                        input: 'text',
+                        inputLabel: 'Nuevo Estado',
+                        inputPlaceholder: 'Ingresa el nuevo estado',
+                        showCancelButton: true,
+                        confirmButtonText: 'Guardar',
+                        preConfirm: (nuevoEstado) => {
+                            return fetch(`/api/modificar_estado/`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': '{{ csrf_token }}'
+                                },
+                                body: JSON.stringify({ orden_id: ordenId, nuevo_estado: nuevoEstado })
+                            }).then(response => {
+                                if (!response.ok) {
+                                    throw new Error(response.statusText)
+                                }
+                                return response.json()
+                            }).catch(error => {
+                                Swal.showValidationMessage(`Request failed: ${error}`)
+                            });
+                        },
+                        allowOutsideClick: () => !Swal.isLoading()
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            Swal.fire({
+                                title: 'Estado Modificado',
+                                text: `Nuevo estado: ${result.value.nuevo_estado}`,
+                                icon: 'success'
+                            }).then(() => {
+                                // Reload the page to show the updated data
+                                location.reload();
+                            });
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
 </html>

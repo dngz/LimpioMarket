@@ -8,32 +8,43 @@ from django.utils.safestring import mark_safe
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 import json
-from .models import Usuario, CarritoDeCompra, Producto, OrdenDeCompra, DetallePedido, Factura
+from .models import Usuario, CarritoDeCompra, Producto, OrdenDeCompra, DetallePedido, Factura,DetalleEstado
 from django.db.models import F, Sum
 from django.utils.crypto import get_random_string
 from django.utils import timezone
 from django.contrib.auth import logout as auth_logout
 from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+from django.http import JsonResponse
+
 
 def index(request):
     return render(request, 'index.html')
 
 @login_required
 def orden_de_compra(request):
-    if request.user.is_superuser:
-        messages.error(request, "Los superusuarios no pueden crear órdenes de compra.")
-        return redirect('lista_productos')
+    if request.method == 'POST':
+        try:
+            orden = OrdenDeCompra(
+                usuario=request.user,
+                fecha=request.POST.get('fecha')
+            )
+            orden.save()
+            for key in request.POST.keys():
+                if key.startswith('producto_'):
+                    producto_id = key.split('_')[1]
+                    cantidad = int(request.POST.get(f'cantidad_{producto_id}', 0))
+                    if cantidad > 0:
+                        DetallePedido.objects.create(
+                            orden_de_compra=orden,
+                            producto_id=producto_id,
+                            cantidad=cantidad
+                        )
+            return JsonResponse({'success': 'Orden de compra creada con éxito.'})
+        except Exception as e:
+            return JsonResponse({'error': f'Ocurrió un error al crear la orden de compra: {str(e)}'})
 
-    try:
-        usuario = Usuario.objects.get(nombre_usuario=request.user.nombre_usuario)
-    except Usuario.DoesNotExist:
-        return HttpResponseForbidden("El usuario no existe.")
-    
-    carrito = CarritoDeCompra.objects.filter(usuario=usuario)
-    productos = [{'nombre': item.producto.nombre, 'precio': item.producto.precio, 'cantidad': item.cantidad} for item in carrito]
-    total_precio = sum([item.producto.precio * item.cantidad for item in carrito])
-
-    return render(request, 'orden_compra.html', {'productos': productos, 'total_precio': total_precio})
+    return render(request, 'orden_compra.html')
 
 @login_required
 def guardar_orden_de_compra(request):
@@ -80,83 +91,66 @@ def guardar_orden_de_compra(request):
 
     return JsonResponse({'error': 'Método no permitido.'})
 
+@login_required
+@csrf_exempt
 def visualizar_orden(request, orden_id):
     orden = get_object_or_404(OrdenDeCompra, id=orden_id)
     detalles = DetallePedido.objects.filter(orden_de_compra=orden)
-    return render(request, 'visualizar_orden.html', {
-        'orden': orden,
-        'detalles': detalles,
-    })
+    
+    detalles_con_totales = []
+    for detalle in detalles:
+        total_detalle = detalle.cantidad * detalle.producto.precio
+        detalles_con_totales.append({
+            'detalle': detalle,
+            'total': total_detalle
+        })
 
+    contexto = {
+        'orden': orden,
+        'detalles': detalles_con_totales,
+        'subtotal': orden.subtotal,
+        'iva': orden.subtotal * 0.19,  # Suponiendo un IVA del 19%
+        'descuento': orden.descuento if orden.descuento else 0,
+        'envio': orden.envio if orden.envio else 0,
+        'total': orden.total
+    }
+    return render(request, 'visualizar_orden.html', contexto)
+
+@login_required
 @csrf_exempt
 def actualizar_orden(request, orden_id):
     if request.method == 'POST':
         orden = get_object_or_404(OrdenDeCompra, id=orden_id)
         detalles = DetallePedido.objects.filter(orden_de_compra=orden)
+        
+        for detalle in detalles:
+            detalle.cantidad = int(request.POST.get(f'cantidad_{detalle.id}'))
+            detalle.producto.precio = float(request.POST.get(f'precio_producto_{detalle.id}'))
+            detalle.producto.nombre = request.POST.get(f'nombre_producto_{detalle.id}')
+            detalle.producto.save()
+            detalle.save()
 
-        try:
-            # Actualizar información del usuario
-            usuario = orden.usuario
-            usuario.nombre_usuario = request.POST['nombre_usuario']
-            usuario.nombre_completo = request.POST['nombre_completo']
-            usuario.rut = request.POST['rut']
-            usuario.email = request.POST['email']
-            usuario.telefono = request.POST['telefono']
-            usuario.direccion = request.POST['direccion']
-            usuario.save()
+        # Recalcular valores de la orden
+        subtotal = sum(detalle.cantidad * detalle.producto.precio for detalle in detalles)
+        iva = subtotal * 0.19  # Suponiendo un IVA del 19%
+        descuento = orden.descuento if orden.descuento else 0
+        envio = orden.envio if orden.envio else 0
+        total = subtotal + iva - descuento + envio
 
-            # Bandera para detectar cambios
-            cambios_realizados = False
+        # Actualizar la orden
+        orden.subtotal = subtotal
+        orden.total = total
+        orden.save()
 
-            # Actualizar los detalles de la orden y los productos
-            for detalle in detalles:
-                cantidad = request.POST.get(f'cantidad_{detalle.id}')
-                if cantidad and int(cantidad) != detalle.cantidad:
-                    detalle.cantidad = int(cantidad)
-                    cambios_realizados = True
+        # Actualizar la factura correspondiente
+        factura = get_object_or_404(Factura, orden_de_compra=orden)
+        factura.subtotal = subtotal
+        factura.impuestos = iva
+        factura.total = total
+        factura.save()
 
-                # Actualizar nombre y precio del producto si están presentes en el POST data
-                nuevo_nombre = request.POST.get(f'nombre_producto_{detalle.id}')
-                nuevo_precio = request.POST.get(f'precio_producto_{detalle.id}')
-
-                if nuevo_nombre and nuevo_nombre != detalle.producto.nombre:
-                    detalle.producto.nombre = nuevo_nombre
-                    cambios_realizados = True
-                if nuevo_precio and int(nuevo_precio) != detalle.producto.precio:
-                    detalle.producto.precio = int(nuevo_precio)
-                    cambios_realizados = True
-
-                detalle.producto.save()
-                detalle.save()
-
-            if cambios_realizados:
-                # Calcular los totales actualizados
-                subtotal_actualizado = sum(detalle.cantidad * detalle.producto.precio for detalle in detalles)
-                impuestos_actualizados = int(subtotal_actualizado * 0.19)
-                total_actualizado = subtotal_actualizado + impuestos_actualizados
-
-                # Actualizar la orden
-                orden.subtotal = subtotal_actualizado
-                orden.total = total_actualizado
-                orden.save()
-
-                # Actualizar la factura asociada a la orden, si existe
-                factura = Factura.objects.filter(orden_de_compra=orden).first()
-                if factura:
-                    factura.subtotal = subtotal_actualizado
-                    factura.impuestos = impuestos_actualizados
-                    factura.total = total_actualizado
-                    factura.condicion = 'rectificado'  # Cambiar la condición a "rectificado"
-                    factura.save()
-
-                return JsonResponse({'success': 'Orden actualizada con éxito.'})
-            else:
-                return JsonResponse({'success': 'No se realizaron cambios en la orden.'})
-
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-    else:
-        return JsonResponse({'error': 'Método no permitido.'})
+        return JsonResponse({'success': 'Orden y factura actualizadas exitosamente'})
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 def login(request):
     if request.method == 'POST':
@@ -186,56 +180,105 @@ def lista_productos(request):
     usuario = request.user
 
     if request.user.is_superuser:
-        # Si el usuario es un superusuario, simplemente pasamos una lista vacía de órdenes
-        ordenes_con_factura = []
+        # Si el usuario es un superusuario, mostramos todas las órdenes
+        ordenes = OrdenDeCompra.objects.all().prefetch_related('detalles__producto')
     else:
         try:
             usuario = Usuario.objects.get(nombre_usuario=usuario.nombre_usuario)
         except Usuario.DoesNotExist:
             return HttpResponseForbidden("El usuario no existe.")
-
         ordenes = OrdenDeCompra.objects.filter(usuario=usuario).prefetch_related('detalles__producto')
-        ordenes_con_factura = []
 
-        for orden in ordenes:
-            impuestos = int(orden.subtotal * 0.19)
-            total_factura = orden.subtotal + impuestos
+    ordenes_con_factura = []
+    for orden in ordenes:
+        impuestos = int(orden.subtotal * 0.19)
+        total_factura = orden.subtotal + impuestos
 
-            factura, created = Factura.objects.get_or_create(
-                orden_de_compra=orden,
-                defaults={
-                    'numero_factura': get_random_string(length=10, allowed_chars='0123456789'),
-                    'subtotal': orden.subtotal,
-                    'impuestos': impuestos,
-                    'total': total_factura,
-                    'fecha_emision': timezone.now()
-                }
-            )
-            if not created:
-                if factura.total != total_factura:
-                    factura.subtotal = orden.subtotal
-                    factura.impuestos = impuestos
-                    factura.total = total_factura
-                    factura.save()
+        factura, created = Factura.objects.get_or_create(
+            orden_de_compra=orden,
+            defaults={
+                'numero_factura': get_random_string(length=10, allowed_chars='0123456789'),
+                'subtotal': orden.subtotal,
+                'impuestos': impuestos,
+                'total': total_factura,
+                'fecha_emision': timezone.now(),
+                'estado': 'Por entregar'  # Asignar valor por defecto al crear la factura
+            }
+        )
+        if not created:
+            if factura.total != total_factura:
+                factura.subtotal = orden.subtotal
+                factura.impuestos = impuestos
+                factura.total = total_factura
+                factura.save()
 
-            detalles_con_totales = [
-                {
-                    'producto': detalle.producto,
-                    'cantidad': detalle.cantidad,
-                    'total': detalle.cantidad * detalle.producto.precio
-                }
-                for detalle in orden.detalles.all()
-            ]
+        detalles_con_totales = [
+            {
+                'producto': detalle.producto,
+                'cantidad': detalle.cantidad,
+                'total': detalle.cantidad * detalle.producto.precio
+            }
+            for detalle in orden.detalles.all()
+        ]
 
-            ordenes_con_factura.append({
-                'orden': orden,
-                'factura': factura,
-                'total': orden.detalles.aggregate(total=Sum(F('cantidad') * F('producto__precio')))['total'] or 0,
-                'detalles': detalles_con_totales
-            })
+        ordenes_con_factura.append({
+            'orden': orden,
+            'factura': factura,
+            'total': orden.detalles.aggregate(total=Sum(F('cantidad') * F('producto__precio')))['total'] or 0,
+            'detalles': detalles_con_totales
+        })
 
     return render(request, 'lista.html', {'ordenes_con_factura': ordenes_con_factura, 'es_superusuario': request.user.is_superuser})
 
 def logout_view(request):
     auth_logout(request)
     return redirect('LOGIN') 
+
+@csrf_exempt
+def modificar_estado_orden(request, orden_id):
+    if request.method == 'POST' and request.user.is_superuser:
+        orden = get_object_or_404(OrdenDeCompra, id=orden_id)
+        estado = request.POST.get('estado')
+        motivo = request.POST.get('motivo')
+        
+        if estado and motivo:
+            # Crear un nuevo registro en DetalleEstado
+            DetalleEstado.objects.create(
+                factura=orden.factura,
+                estado=estado,
+                motivo=motivo
+            )
+
+            orden.factura.estado = estado
+            orden.factura.motivo = motivo  # Asume que has agregado un campo 'motivo' en el modelo Factura
+            orden.factura.save()
+            
+            return JsonResponse({'success': 'Estado de la orden actualizado con éxito.'})
+        else:
+            return JsonResponse({'error': 'Debe ingresar un estado y un motivo.'})
+    return JsonResponse({'error': 'Método no permitido.'})
+
+@login_required
+def lista_ordenes_facturas(request):
+    if request.user.is_superuser:
+        ordenes = OrdenDeCompra.objects.all()
+    else:
+        ordenes = OrdenDeCompra.objects.filter(usuario=request.user)
+
+    ordenes_con_factura = []
+
+    for orden in ordenes:
+        factura = Factura.objects.filter(orden_de_compra=orden).first()
+        detalles = DetallePedido.objects.filter(orden_de_compra=orden)
+        total = sum(detalle.cantidad * detalle.producto.precio for detalle in detalles)
+        ordenes_con_factura.append({
+            'orden': orden,
+            'factura': factura,
+            'detalles': detalles,
+            'total': total
+        })
+
+    return render(request, 'lista.html', {
+        'ordenes_con_factura': ordenes_con_factura,
+        'es_superusuario': request.user.is_superuser
+    })
