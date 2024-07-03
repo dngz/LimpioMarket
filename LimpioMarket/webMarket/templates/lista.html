@@ -228,8 +228,7 @@
                         html: facturaElement.querySelector('.factura-tabla')
                     });
 
-                    // Save the PDF
-                    doc.save(`factura_${facturaId}.pdf`);
+                    doc.save('factura_' + facturaId + '.pdf');
                 });
             });
 
@@ -237,44 +236,60 @@
                 button.addEventListener('click', function() {
                     const ordenId = this.dataset.ordenId;
                     Swal.fire({
-                        title: 'Modificar Estado de la Factura',
-                        input: 'text',
-                        inputLabel: 'Nuevo Estado',
-                        inputPlaceholder: 'Ingresa el nuevo estado',
+                        title: 'Modificar Estado de Factura',
+                        html:
+                            '<label for="estado">Estado:</label>' +
+                            '<select id="estado" class="swal2-input">' +
+                            '<option value="Entregado">Entregado</option>' +
+                            '<option value="Rechazado">Rechazado</option>' +
+                            '</select>' +
+                            '<br>' +
+                            '<label for="motivo">Motivo:</label>' +
+                            '<textarea id="motivo" class="swal2-textarea"></textarea>',
+                        preConfirm: () => {
+                            const estado = document.getElementById('estado').value;
+                            const motivo = document.getElementById('motivo').value;
+                            return { estado: estado, motivo: motivo };
+                        },
                         showCancelButton: true,
                         confirmButtonText: 'Guardar',
-                        preConfirm: (nuevoEstado) => {
-                            return fetch(`/api/modificar_estado/`, {
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const estado = result.value.estado;
+                            const motivo = result.value.motivo;
+
+                            fetch(`/ordenes/${ordenId}/modificar_estado/`, {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'X-CSRFToken': '{{ csrf_token }}'
                                 },
-                                body: JSON.stringify({ orden_id: ordenId, nuevo_estado: nuevoEstado })
+                                body: JSON.stringify({ estado: estado, motivo: motivo })
                             }).then(response => {
-                                if (!response.ok) {
-                                    throw new Error(response.statusText)
+                                if (response.ok) {
+                                    Swal.fire('Éxito', 'El estado se cambió correctamente.', 'success').then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire('Error', 'No se pudo modificar el estado.', 'error');
                                 }
-                                return response.json()
                             }).catch(error => {
-                                Swal.showValidationMessage(`Request failed: ${error}`)
-                            });
-                        },
-                        allowOutsideClick: () => !Swal.isLoading()
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            Swal.fire({
-                                title: 'Estado Modificado',
-                                text: `Nuevo estado: ${result.value.nuevo_estado}`,
-                                icon: 'success'
-                            }).then(() => {
-                                // Reload the page to show the updated data
-                                location.reload();
+                                Swal.fire('Error', 'Hubo un problema con la solicitud.', 'error');
                             });
                         }
                     });
                 });
             });
+
+            {% if messages %}
+                Swal.fire({
+                    title: 'Éxito',
+                    text: '{{ messages|last }}',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+            {% endif %}
         });
     </script>
 </body>

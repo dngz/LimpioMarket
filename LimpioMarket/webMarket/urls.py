@@ -11,5 +11,6 @@ urlpatterns = [
     path('visualizar-orden/<int:orden_id>/', visualizar_orden, name='visualizar_orden'),
     path('actualizar-orden/<int:orden_id>/', actualizar_orden, name='actualizar_orden'),
     path('modificar_estado_orden/<int:orden_id>/', modificar_estado_orden, name='mod_es_ord'),
+    path('ordenes/<int:orden_id>/modificar_estado/', modificar_estado_orden, name='modificar_estado_orden'),
 
 ]

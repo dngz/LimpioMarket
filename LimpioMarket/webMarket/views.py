@@ -235,11 +235,13 @@ def logout_view(request):
     return redirect('LOGIN') 
 
 @csrf_exempt
+@login_required
 def modificar_estado_orden(request, orden_id):
     if request.method == 'POST' and request.user.is_superuser:
         orden = get_object_or_404(OrdenDeCompra, id=orden_id)
-        estado = request.POST.get('estado')
-        motivo = request.POST.get('motivo')
+        data = json.loads(request.body.decode('utf-8'))
+        estado = data.get('estado')
+        motivo = data.get('motivo')
         
         if estado and motivo:
             # Crear un nuevo registro en DetalleEstado
@@ -250,13 +252,13 @@ def modificar_estado_orden(request, orden_id):
             )
 
             orden.factura.estado = estado
-            orden.factura.motivo = motivo  # Asume que has agregado un campo 'motivo' en el modelo Factura
+            orden.factura.motivo = motivo
             orden.factura.save()
             
             return JsonResponse({'success': 'Estado de la orden actualizado con éxito.'})
         else:
-            return JsonResponse({'error': 'Debe ingresar un estado y un motivo.'})
-    return JsonResponse({'error': 'Método no permitido.'})
+            return JsonResponse({'error': 'Debe ingresar un estado y un motivo.'}, status=400)
+    return JsonResponse({'error': 'Método no permitido.'}, status=405)
 
 @login_required
 def lista_ordenes_facturas(request):
@@ -282,3 +284,20 @@ def lista_ordenes_facturas(request):
         'ordenes_con_factura': ordenes_con_factura,
         'es_superusuario': request.user.is_superuser
     })
+
+@csrf_exempt
+def modificar_estado(request, orden_id):
+    if request.method == 'POST':
+        orden = get_object_or_404(OrdenDeCompra, id=orden_id)
+        data = json.loads(request.body)
+        estado = data.get('estado')
+        motivo = data.get('motivo', '')
+
+        factura = orden.factura
+        factura.estado = estado
+        factura.motivo = motivo
+        factura.save()
+
+        return JsonResponse({'status': 'success'})
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
