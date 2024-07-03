@@ -210,13 +210,13 @@ def lista_productos(request):
 
     if request.user.is_superuser:
         # Si el usuario es un superusuario, mostramos todas las órdenes
-        ordenes = OrdenDeCompra.objects.all().prefetch_related('detalles__producto')
+        ordenes = OrdenDeCompra.objects.all().prefetch_related('detalles__producto', 'factura__detalles_estado')
     else:
         try:
             usuario = Usuario.objects.get(nombre_usuario=usuario.nombre_usuario)
         except Usuario.DoesNotExist:
             return HttpResponseForbidden("El usuario no existe.")
-        ordenes = OrdenDeCompra.objects.filter(usuario=usuario).prefetch_related('detalles__producto')
+        ordenes = OrdenDeCompra.objects.filter(usuario=usuario).prefetch_related('detalles__producto', 'factura__detalles_estado')
 
     ordenes_con_factura = []
     for orden in ordenes:
@@ -260,7 +260,7 @@ def lista_productos(request):
             })
 
     # Configurar la paginación
-    paginator = Paginator(ordenes_con_factura, 2)  # Muestra 2 órdenes por página
+    paginator = Paginator(ordenes_con_factura, 1)  # Muestra 2 órdenes por página
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -370,12 +370,14 @@ def modificar_estado(request, orden_id):
 
 @login_required
 def lista_facturas_entregadas(request):
+    usuario = request.user
     # Filtrar facturas entregadas que pertenecen al usuario actual
     facturas_entregadas = Factura.objects.filter(
         estado='Entregado',
         orden_de_compra__usuario=request.user  # Asumiendo que hay un campo 'usuario' en la orden de compra
     ).prefetch_related('orden_de_compra__detalles__producto')
     
+    ordenes = OrdenDeCompra.objects.filter(usuario=usuario).prefetch_related('detalles__producto', 'factura__detalles_estado')
     facturas_con_detalles = []
     for factura in facturas_entregadas:
         detalles_con_totales = [

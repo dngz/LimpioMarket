@@ -26,7 +26,7 @@
 
         {% for item in page_obj %}
         <div class="orden">
-            <h2>Orden de Compra #{{ item.orden.id }}</h2>
+            <h2 onclick="toggleDetallesEstado({{ item.orden.id }})" style="cursor: pointer;">Orden de Compra #{{ item.orden.id }}</h2>
             <div class="info-container">
                 <table>
                     <tr>
@@ -43,7 +43,14 @@
                     </tr>
                 </table>
             </div>
-
+            <div id="detalles-estado-{{ item.orden.id }}" class="detalles-estado" style="display: none;">
+                <h3>Detalles del Estado:</h3>
+                <ul>
+                    {% for detalle in item.factura.detalles_estado.all %}
+                        <li>{{ detalle.estado }} - {{ detalle.motivo }} - {{ detalle.fecha_cambio }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
             <div class="factura">
                 <h2>Factura</h2>
                 <div class="info-container">
@@ -118,7 +125,6 @@
                         PDF</button>
                 </div>
             </div>
-
         </div>
         {% endfor %}
 
@@ -196,6 +202,16 @@
                 });
             });
         });
+    </script>
+    <script>
+        function toggleDetallesEstado(ordenId) {
+            const detallesEstadoDiv = document.getElementById(`detalles-estado-${ordenId}`);
+            if (detallesEstadoDiv.style.display === 'none') {
+                detallesEstadoDiv.style.display = 'block';
+            } else {
+                detallesEstadoDiv.style.display = 'none';
+            }
+        }
     </script>
 </body>
 

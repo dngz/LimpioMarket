@@ -23,7 +23,7 @@
 
         {% for item in page_obj %}
         <div class="orden">
-            <h2>Orden de Compra #{{item.orden.id}}</h2>
+            <h2 onclick="toggleDetallesEstado({{ item.orden.id }})" style="cursor: pointer;">Orden de Compra #{{ item.orden.id }}</h2>
             <div class="info-container">
                 <table>
                     <tr>
@@ -44,7 +44,15 @@
                     </tr>
                 </table>
             </div>
-
+            <div id="detalles-estado-{{ item.orden.id }}" class="detalles-estado" style="display: none;">
+                <h3>Detalles del Estado:</h3>
+                <ul>
+                    {% for detalle in item.factura.detalles_estado.all %}
+                        <li>{{ detalle.estado }} - {{ detalle.motivo }} - {{ detalle.fecha_cambio }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
             <div class="vendedor-comprador-container">
                 <div class="vendedor">
                     <table class="vendedor-comprador-tabla">
@@ -190,7 +198,9 @@
                 {% if not es_superusuario %}
                 <a href="{% url 'visualizar_orden' item.orden.id %}" class="btn modificar-orden">Modificar Orden</a>
                 {% else %}
+                {% if item.factura.estado != "Entregado" %}
                 <button class="btn modificar-estado" data-orden-id="{{ item.orden.id }}">Modificar Estado</button>
+                {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -464,6 +474,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
         });
+    </script>
+    <script>
+        function toggleDetallesEstado(ordenId) {
+            const detallesEstadoDiv = document.getElementById(`detalles-estado-${ordenId}`);
+            if (detallesEstadoDiv.style.display === 'none') {
+                detallesEstadoDiv.style.display = 'block';
+            } else {
+                detallesEstadoDiv.style.display = 'none';
+            }
+        }
     </script>
 </body>
 
