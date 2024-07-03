@@ -102,7 +102,12 @@ class Factura(models.Model):
     fecha_emision = models.DateTimeField(default=timezone.now)
     condicion = models.CharField(max_length=20, default='creada')
     estado = models.CharField(max_length=20, default='Por entregar')
-    motivo = models.TextField(null=True, blank=True)  # Añadir el campo motivo
+    motivo = models.TextField(null=True, blank=True)
+
+    # Nuevos campos para el estado 'Entregado'
+    rut = models.CharField(max_length=12, null=True, blank=True)
+    direccion = models.CharField(max_length=255, null=True, blank=True)
+    foto = models.ImageField(upload_to='webMarket/static/img/', null=True, blank=True)
 
     def __str__(self):
         return self.numero_factura
@@ -115,3 +120,12 @@ class DetalleEstado(models.Model):
 
     def __str__(self):
         return f"{self.factura.numero_factura} - {self.estado} - {self.motivo}"
+    
+class HistorialCambios(models.Model):
+    orden = models.ForeignKey(OrdenDeCompra, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    descripcion = models.TextField()
+    fecha_cambio = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f'Cambio en Orden {self.orden.id} por {self.usuario.username} en {self.fecha_cambio}'
