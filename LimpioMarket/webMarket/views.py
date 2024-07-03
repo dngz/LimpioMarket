@@ -144,7 +144,6 @@ def actualizar_orden(request, orden_id):
                 cambios.append(f'Nombre del producto cambiado de {nombre_anterior} a {detalle.producto.nombre}')
 
         # Actualizar los datos del usuario asociado a la orden
-        orden.usuario.nombre_usuario = request.POST.get('nombre_usuario')
         orden.usuario.nombre_completo = request.POST.get('nombre_completo')
         orden.usuario.rut = request.POST.get('rut')
         orden.usuario.email = request.POST.get('email')
