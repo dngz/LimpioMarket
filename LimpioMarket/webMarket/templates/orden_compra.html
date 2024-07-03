@@ -137,10 +137,39 @@
             }
 
             document.getElementById('agregar-producto-btn').addEventListener('click', function() {
-                var nombre = document.getElementById('nombre').value;
+                var nombre = document.getElementById('nombre').value.trim();
                 var cantidad = parseInt(document.getElementById('cantidad').value);
                 var precio = parseFloat(document.getElementById('precio').value);
 
+                // Validaciones
+                if (nombre.length < 3) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'El nombre del producto debe tener al menos 3 letras.'
+                    });
+                    return;
+                }
+
+                if (cantidad <= 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'La cantidad debe ser mayor a 0.'
+                    });
+                    return;
+                }
+
+                if (precio < 500) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'El precio debe ser mayor o igual a 500.'
+                    });
+                    return;
+                }
+
+                // Añadir o actualizar el producto en la lista
                 var productoExistente = productos.find(function(producto) {
                     return producto.nombre === nombre;
                 });

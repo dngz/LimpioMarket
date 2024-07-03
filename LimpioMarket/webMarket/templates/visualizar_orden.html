@@ -22,27 +22,27 @@
                 </tr>
                 <tr>
                     <td>Usuario:</td>
-                    <td><input type="text" name="nombre_usuario" value="{{ orden.usuario.nombre_usuario }}"></td>
+                    <td><input type="text" name="nombre_usuario" value="{{ orden.usuario.nombre_usuario }}" required></td>
                 </tr>
                 <tr>
                     <td>Nombre Completo:</td>
-                    <td><input type="text" name="nombre_completo" value="{{ orden.usuario.nombre_completo }}"></td>
+                    <td><input type="text" name="nombre_completo" value="{{ orden.usuario.nombre_completo }}" required></td>
                 </tr>
                 <tr>
                     <td>RUT:</td>
-                    <td><input type="text" name="rut" value="{{ orden.usuario.rut }}"></td>
+                    <td><input type="text" name="rut" value="{{ orden.usuario.rut }}" required></td>
                 </tr>
                 <tr>
                     <td>Email:</td>
-                    <td><input type="email" name="email" value="{{ orden.usuario.email }}"></td>
+                    <td><input type="email" name="email" value="{{ orden.usuario.email }}" required></td>
                 </tr>
                 <tr>
                     <td>Teléfono:</td>
-                    <td><input type="text" name="telefono" value="{{ orden.usuario.telefono }}"></td>
+                    <td><input type="text" name="telefono" value="{{ orden.usuario.telefono }}" required></td>
                 </tr>
                 <tr>
                     <td>Dirección:</td>
-                    <td><input type="text" name="direccion" value="{{ orden.usuario.direccion }}"></td>
+                    <td><input type="text" name="direccion" value="{{ orden.usuario.direccion }}" required></td>
                 </tr>
                 <tr>
                     <td>Fecha:</td>
@@ -83,13 +83,13 @@
                     {% for detalle in detalles %}
                     <tr>
                         <td>
-                            <input type="text" name="nombre_producto_{{ detalle.detalle.id }}" value="{{ detalle.detalle.producto.nombre }}">
+                            <input type="text" name="nombre_producto_{{ detalle.detalle.id }}" value="{{ detalle.detalle.producto.nombre }}" required>
                         </td>
                         <td>
-                            <input type="number" name="cantidad_{{ detalle.detalle.id }}" value="{{ detalle.detalle.cantidad }}">
+                            <input type="number" name="cantidad_{{ detalle.detalle.id }}" value="{{ detalle.detalle.cantidad }}" min="1" required>
                         </td>
                         <td>
-                            <input type="number" name="precio_producto_{{ detalle.detalle.id }}" value="{{ detalle.detalle.producto.precio }}">
+                            <input type="number" name="precio_producto_{{ detalle.detalle.id }}" value="{{ detalle.detalle.producto.precio }}" min="500" step="0.01" required>
                         </td>
                         <td>{{ detalle.total }}</td>
                     </tr>
@@ -106,6 +106,69 @@
             const form = document.getElementById('updateForm');
             form.addEventListener('submit', function(event) {
                 event.preventDefault();
+
+                const nombreUsuario = form.querySelector('input[name="nombre_usuario"]').value.trim();
+                const nombreCompleto = form.querySelector('input[name="nombre_completo"]').value.trim();
+                const rut = form.querySelector('input[name="rut"]').value.trim();
+                const email = form.querySelector('input[name="email"]').value.trim();
+                const telefono = form.querySelector('input[name="telefono"]').value.trim();
+                const direccion = form.querySelector('input[name="direccion"]').value.trim();
+
+                if (!nombreUsuario) {
+                    Swal.fire('Error', 'El nombre de usuario es obligatorio.', 'error');
+                    return;
+                }
+
+                if (nombreCompleto.length < 5) {
+                    Swal.fire('Error', 'El nombre completo debe tener al menos 5 caracteres.', 'error');
+                    return;
+                }
+
+                if (rut.length < 9) {
+                    Swal.fire('Error', 'El RUT debe tener al menos 9 caracteres.', 'error');
+                    return;
+                }
+
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    Swal.fire('Error', 'El email no es válido.', 'error');
+                    return;
+                }
+
+                if (telefono.length !== 9) {
+                    Swal.fire('Error', 'El teléfono debe tener 9 caracteres.', 'error');
+                    return;
+                }
+
+                if (direccion.length < 5) {
+                    Swal.fire('Error', 'La dirección debe tener al menos 5 caracteres.', 'error');
+                    return;
+                }
+
+                const productInputs = form.querySelectorAll('input[name^="nombre_producto_"]');
+                const cantidadInputs = form.querySelectorAll('input[name^="cantidad_"]');
+                const precioInputs = form.querySelectorAll('input[name^="precio_producto_"]');
+
+                for (let input of productInputs) {
+                    if (input.value.trim().length < 3) {
+                        Swal.fire('Error', 'El nombre del producto debe tener al menos 3 caracteres.', 'error');
+                        return;
+                    }
+                }
+
+                for (let input of cantidadInputs) {
+                    if (input.value <= 0) {
+                        Swal.fire('Error', 'La cantidad debe ser mayor a 0.', 'error');
+                        return;
+                    }
+                }
+
+                for (let input of precioInputs) {
+                    if (input.value < 500) {
+                        Swal.fire('Error', 'El precio unitario debe ser mayor a 500.', 'error');
+                        return;
+                    }
+                }
+
                 const formData = new FormData(form);
 
                 fetch(form.action, {

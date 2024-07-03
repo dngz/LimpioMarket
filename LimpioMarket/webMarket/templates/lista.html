@@ -134,10 +134,10 @@
                         <tr>
                             <td colspan="4">
                                 <strong>Foto:</strong>
-                                <a href="{{ item.factura.foto.url }}" target="_blank">
-                                    <img src="{{ item.factura.foto }}" alt="Foto" style="max-width: 100px; max-height: 100px;">
+                                <a id="foto-link" href="{{ item.factura.foto.url }}" target="_blank">
+                                    <img src="{{ item.factura.foto }}" alt="Ver Foto" style="max-width: 100px; max-height: 100px;">
                                 </a>
-                            </td>
+                            </td>   
                         </tr>
                         {% endif %}
                         {% if item.factura.condicion == "rectificado" %}
@@ -322,16 +322,42 @@ document.addEventListener('DOMContentLoaded', function () {
             preConfirm: () => {
                 const estado = document.getElementById('estado').value;
                 let data = { estado: estado };
+
                 if (estado === 'Entregado') {
-                    data.rut = document.getElementById('rut').value;
-                    data.direccion = document.getElementById('direccion').value;
+                    const rut = document.getElementById('rut').value;
+                    const direccion = document.getElementById('direccion').value;
                     const foto = document.getElementById('foto').files[0];
-                    if (foto) {
-                        data.foto = foto;
+
+                    if (!rut) {
+                        Swal.showValidationMessage('Por favor, ingrese el RUT.');
+                        return false;
                     }
+
+                    if (!direccion || direccion.length < 6) {
+                        Swal.showValidationMessage('La dirección debe tener al menos 6 caracteres.');
+                        return false;
+                    }
+
+                    if (!foto) {
+                        Swal.showValidationMessage('Por favor, adjunte una Foto.');
+                        return false;
+                    }
+
+                    data.rut = rut;
+                    data.direccion = direccion;
+                    data.foto = foto;
+
                 } else if (estado === 'Rechazado') {
-                    data.motivo = document.getElementById('motivo').value;
+                    const motivo = document.getElementById('motivo').value;
+
+                    if (!motivo || motivo.length < 8) {
+                        Swal.showValidationMessage('El motivo debe tener al menos 8 caracteres.');
+                        return false;
+                    }
+
+                    data.motivo = motivo;
                 }
+
                 return data;
             },
             showCancelButton: true,
