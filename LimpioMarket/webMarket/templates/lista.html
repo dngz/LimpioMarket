@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Lista de Órdenes y Facturas</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/lista.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
 </head>
+
 <body>
     <div class="button-container">
         <a href="{% url 'logout' %}" class="btn" id="logoutBtn" style="margin-right: 80%;">Logout</a>
@@ -20,7 +23,7 @@
 
         {% for item in page_obj %}
         <div class="orden">
-            <h2>Orden de Compra</h2>
+            <h2>Orden de Compra #{{item.orden.id}}</h2>
             <div class="info-container">
                 <table>
                     <tr>
@@ -121,7 +124,9 @@
                             <td colspan="4"><strong>Motivo:</strong> {{ item.factura.motivo }}</td> <!-- Nuevo campo -->
                         </tr>
                         {% if item.factura.condicion == "rectificado" %}
-                            <td colspan="4" style="color: red;"><h5>*Factura rectificada</h5></td>
+                        <td colspan="4" style="color: red;">
+                            <h5>*Factura rectificada</h5>
+                        </td>
                         {% endif %}
                         <tr>
                             <th>Productos</th>
@@ -163,47 +168,75 @@
                 </table>
             </div>
             <div class="button-container">
-                <button class="btn exportar-pdf" data-factura-id="{{ item.factura.numero_factura }}">Exportar como PDF</button>
+                <button class="btn exportar-pdf" data-factura-id="{{ item.factura.numero_factura }}">Exportar como
+                    PDF</button>
                 {% if not es_superusuario %}
-                    <a href="{% url 'visualizar_orden' item.orden.id %}" class="btn modificar-orden">Modificar Orden</a>
+                <a href="{% url 'visualizar_orden' item.orden.id %}" class="btn modificar-orden">Modificar Orden</a>
                 {% else %}
-                    <button class="btn modificar-estado" data-orden-id="{{ item.orden.id }}">Modificar Estado</button>
+                <button class="btn modificar-estado" data-orden-id="{{ item.orden.id }}">Modificar Estado</button>
                 {% endif %}
             </div>
         </div>
         {% endfor %}
 
         <!-- Paginación -->
-        <div class="pagination">
-            <span class="step-links">
+        <div class="pagination-container">
+            <ul class="pagination">
                 {% if page_obj.has_previous %}
-                    <a href="?page=1">&laquo; primero</a>
-                    <a href="?page={{ page_obj.previous_page_number }}">anterior</a>
+                <li class="page-item">
+                    <a class="page-link" href="?page=1" aria-label="Primero">
+                        &laquo; Primero
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
+                        Anterior
+                    </a>
+                </li>
                 {% endif %}
 
-                <span class="current">
-                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.
-                </span>
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %} <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
 
-                {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}">siguiente</a>
-                    <a href="?page={{ page_obj.paginator.num_pages }}">último &raquo;</a>
-                {% endif %}
-            </span>
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Siguiente">
+                            Siguiente
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Último">
+                            Último &raquo;
+                        </a>
+                    </li>
+                    {% endif %}
+            </ul>
+        </div>
+        {% if not es_superusuario %}
+        <div class="button-container">
+            <a href="{% url 'facturas_entregadas' %}" class="btn">Ver Facturas Entregadas</a>
         </div>
 
-        {% if not es_superusuario %}
-            <div class="button-container">
-                <a href="{% url 'orden_de_compra' %}" class="btn"><button class="btn" id="nuevaOrdenCompraBtn">Nueva Orden de Compra</button></a>
-            </div>
+        <div class="button-container">
+            <a href="{% url 'orden_de_compra' %}" class="btn"><button class="btn" id="nuevaOrdenCompraBtn">Nueva Orden
+                    de Compra</button></a>
+        </div>
         {% endif %}
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const { jsPDF } = window.jspdf;
 
             document.querySelectorAll('.exportar-pdf').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     const facturaId = this.dataset.facturaId;
                     const facturaElement = this.closest('.orden');
                     const doc = new jsPDF();
@@ -253,7 +286,7 @@
             });
 
             document.querySelectorAll('.modificar-estado').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     const ordenId = this.dataset.ordenId;
                     Swal.fire({
                         title: 'Modificar Estado de Factura',
@@ -303,14 +336,52 @@
             });
 
             {% if messages %}
-                Swal.fire({
-                    title: 'Éxito',
-                    text: '{{ messages|last }}',
-                    icon: 'success',
-                    confirmButtonText: 'OK'
-                });
+            Swal.fire({
+                title: 'Éxito',
+                text: '{{ messages|last }}',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
             {% endif %}
         });
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const { jsPDF } = window.jspdf;
+
+            document.querySelectorAll('.exportar-pdf').forEach(button => {
+                button.addEventListener('click', function () {
+                    const facturaId = this.dataset.facturaId;
+                    const facturaElement = this.closest('.factura');
+                    const doc = new jsPDF();
+
+                    // Set initial y coordinate for text and tables
+                    let y = 10;
+
+                    // Add Factura title
+                    doc.text('Factura', 10, y);
+                    y += 10;
+
+                    // Información de la factura
+                    doc.autoTable({
+                        startY: y,
+                        html: facturaElement.querySelector('.info-container table')
+                    });
+                    y = doc.lastAutoTable.finalY + 10; // Update y coordinate
+
+                    // Información de la factura
+                    doc.text('Detalles de la Factura', 10, y);
+                    y += 10;
+                    doc.autoTable({
+                        startY: y,
+                        html: facturaElement.querySelector('.factura-tabla')
+                    });
+
+                    doc.save('factura_' + facturaId + '.pdf');
+                });
+            });
+        });
+    </script>
 </body>
+
 </html>

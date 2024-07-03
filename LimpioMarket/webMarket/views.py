@@ -8,7 +8,7 @@ from django.utils.safestring import mark_safe
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 import json
-from .models import Usuario, CarritoDeCompra, Producto, OrdenDeCompra, DetallePedido, Factura,DetalleEstado
+from .models import Usuario, CarritoDeCompra, Producto, OrdenDeCompra, DetallePedido, Factura,DetalleEstado, HistorialCambios
 from django.db.models import F, Sum
 from django.utils.crypto import get_random_string
 from django.utils import timezone
@@ -122,13 +122,25 @@ def actualizar_orden(request, orden_id):
     if request.method == 'POST':
         orden = get_object_or_404(OrdenDeCompra, id=orden_id)
         detalles = DetallePedido.objects.filter(orden_de_compra=orden)
-        
+        cambios = []
+
         for detalle in detalles:
+            cantidad_anterior = detalle.cantidad
+            precio_anterior = detalle.producto.precio
+            nombre_anterior = detalle.producto.nombre
+
             detalle.cantidad = int(request.POST.get(f'cantidad_{detalle.id}'))
             detalle.producto.precio = float(request.POST.get(f'precio_producto_{detalle.id}'))
             detalle.producto.nombre = request.POST.get(f'nombre_producto_{detalle.id}')
             detalle.producto.save()
             detalle.save()
+
+            if cantidad_anterior != detalle.cantidad:
+                cambios.append(f'Cantidad de {detalle.producto.nombre} cambiada de {cantidad_anterior} a {detalle.cantidad}')
+            if precio_anterior != detalle.producto.precio:
+                cambios.append(f'Precio de {detalle.producto.nombre} cambiado de {precio_anterior} a {detalle.producto.precio}')
+            if nombre_anterior != detalle.producto.nombre:
+                cambios.append(f'Nombre del producto cambiado de {nombre_anterior} a {detalle.producto.nombre}')
 
         # Recalcular valores de la orden
         subtotal = sum(detalle.cantidad * detalle.producto.precio for detalle in detalles)
@@ -149,8 +161,23 @@ def actualizar_orden(request, orden_id):
         factura.total = total
         factura.save()
 
+        # Registrar en el historial de cambios
+        if cambios:
+            descripcion_cambios = "; ".join(cambios)
+            HistorialCambios.objects.create(
+                orden=orden,
+                usuario=request.user,
+                descripcion=descripcion_cambios
+            )
+
         return JsonResponse({'success': 'Orden y factura actualizadas exitosamente'})
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+def ver_historial(request, orden_id):
+    orden = get_object_or_404(OrdenDeCompra, id=orden_id)
+    historial = HistorialCambios.objects.filter(orden=orden).order_by('-fecha_cambio')
+    return render(request, 'historial.html', {'orden': orden, 'historial': historial})
 
 def login(request):
     if request.method == 'POST':
@@ -212,21 +239,23 @@ def lista_productos(request):
                 factura.total = total_factura
                 factura.save()
 
-        detalles_con_totales = [
-            {
-                'producto': detalle.producto,
-                'cantidad': detalle.cantidad,
-                'total': detalle.cantidad * detalle.producto.precio
-            }
-            for detalle in orden.detalles.all()
-        ]
+        # Filtrar facturas para usuarios no superusuarios
+        if request.user.is_superuser or factura.estado != 'Entregado':
+            detalles_con_totales = [
+                {
+                    'producto': detalle.producto,
+                    'cantidad': detalle.cantidad,
+                    'total': detalle.cantidad * detalle.producto.precio
+                }
+                for detalle in orden.detalles.all()
+            ]
 
-        ordenes_con_factura.append({
-            'orden': orden,
-            'factura': factura,
-            'total': orden.detalles.aggregate(total=Sum(F('cantidad') * F('producto__precio')))['total'] or 0,
-            'detalles': detalles_con_totales
-        })
+            ordenes_con_factura.append({
+                'orden': orden,
+                'factura': factura,
+                'total': orden.detalles.aggregate(total=Sum(F('cantidad') * F('producto__precio')))['total'] or 0,
+                'detalles': detalles_con_totales
+            })
 
     # Configurar la paginación
     paginator = Paginator(ordenes_con_factura, 2)  # Muestra 2 órdenes por página
@@ -306,3 +335,32 @@ def modificar_estado(request, orden_id):
         return JsonResponse({'status': 'success'})
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+@login_required
+def lista_facturas_entregadas(request):
+    facturas_entregadas = Factura.objects.filter(estado='Entregado').prefetch_related('orden_de_compra__detalles__producto')
+    
+    facturas_con_detalles = []
+    for factura in facturas_entregadas:
+        detalles_con_totales = [
+            {
+                'producto': detalle.producto,
+                'cantidad': detalle.cantidad,
+                'total': detalle.cantidad * detalle.producto.precio
+            }
+            for detalle in factura.orden_de_compra.detalles.all()
+        ]
+
+        facturas_con_detalles.append({
+            'factura': factura,
+            'orden': factura.orden_de_compra,
+            'detalles': detalles_con_totales
+        })
+
+    # Configurar la paginación
+    paginator = Paginator(facturas_con_detalles, 2)  # Muestra 2 facturas por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'facturas_entregadas.html', {'page_obj': page_obj, 'es_superusuario': request.user.is_superuser})
+

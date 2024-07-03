@@ -115,3 +115,12 @@ class DetalleEstado(models.Model):
 
     def __str__(self):
         return f"{self.factura.numero_factura} - {self.estado} - {self.motivo}"
+    
+class HistorialCambios(models.Model):
+    orden = models.ForeignKey(OrdenDeCompra, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    descripcion = models.TextField()
+    fecha_cambio = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f'Cambio en Orden {self.orden.id} por {self.usuario.username} en {self.fecha_cambio}'
