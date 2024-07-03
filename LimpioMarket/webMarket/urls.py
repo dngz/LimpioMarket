@@ -1,5 +1,7 @@
 from django.urls import path
 from .views import *
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', login, name='LOGIN'),
@@ -14,4 +16,4 @@ urlpatterns = [
     path('ordenes/<int:orden_id>/modificar_estado/', modificar_estado_orden, name='modificar_estado_orden'),
     path('ordenes/<int:orden_id>/historial/', ver_historial, name='ver_historial'),
     path('facturas_entregadas/', lista_facturas_entregadas, name='facturas_entregadas'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

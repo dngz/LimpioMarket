@@ -124,6 +124,7 @@ def actualizar_orden(request, orden_id):
         detalles = DetallePedido.objects.filter(orden_de_compra=orden)
         cambios = []
 
+        # Actualizar los detalles de los productos
         for detalle in detalles:
             cantidad_anterior = detalle.cantidad
             precio_anterior = detalle.producto.precio
@@ -141,6 +142,15 @@ def actualizar_orden(request, orden_id):
                 cambios.append(f'Precio de {detalle.producto.nombre} cambiado de {precio_anterior} a {detalle.producto.precio}')
             if nombre_anterior != detalle.producto.nombre:
                 cambios.append(f'Nombre del producto cambiado de {nombre_anterior} a {detalle.producto.nombre}')
+
+        # Actualizar los datos del usuario asociado a la orden
+        orden.usuario.nombre_usuario = request.POST.get('nombre_usuario')
+        orden.usuario.nombre_completo = request.POST.get('nombre_completo')
+        orden.usuario.rut = request.POST.get('rut')
+        orden.usuario.email = request.POST.get('email')
+        orden.usuario.telefono = request.POST.get('telefono')
+        orden.usuario.direccion = request.POST.get('direccion')
+        orden.usuario.save()
 
         # Recalcular valores de la orden
         subtotal = sum(detalle.cantidad * detalle.producto.precio for detalle in detalles)
@@ -161,16 +171,8 @@ def actualizar_orden(request, orden_id):
         factura.total = total
         factura.save()
 
-        # Registrar en el historial de cambios
-        if cambios:
-            descripcion_cambios = "; ".join(cambios)
-            HistorialCambios.objects.create(
-                orden=orden,
-                usuario=request.user,
-                descripcion=descripcion_cambios
-            )
-
         return JsonResponse({'success': 'Orden y factura actualizadas exitosamente'})
+    
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 @login_required

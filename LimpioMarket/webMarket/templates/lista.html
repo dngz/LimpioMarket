@@ -134,7 +134,7 @@
                         <tr>
                             <td colspan="4">
                                 <strong>Foto:</strong>
-                                <a href="{{ item.factura.foto }}" target="_blank">
+                                <a href="{{ item.factura.foto.url }}" target="_blank">
                                     <img src="{{ item.factura.foto }}" alt="Foto" style="max-width: 100px; max-height: 100px;">
                                 </a>
                             </td>
@@ -145,7 +145,7 @@
                             <h5>*Factura rectificada</h5>
                         </td>
                         {% endif %}
-                        <tr>
+                        <tr>    
                             <th>Productos</th>
                             <th>Cantidad</th>
                             <th>Precio Unitario</th>
