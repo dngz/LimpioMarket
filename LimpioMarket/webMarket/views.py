@@ -169,6 +169,7 @@ def actualizar_orden(request, orden_id):
         factura.subtotal = subtotal
         factura.impuestos = iva
         factura.total = total
+        factura.estado = "Por Entregar"
         factura.save()
 
         return JsonResponse({'success': 'Orden y factura actualizadas exitosamente'})
