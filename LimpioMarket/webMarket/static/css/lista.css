@@ -205,3 +205,32 @@ h1 {
     background-color: #fff;
     border-color: #dee2e6;
 }
+
+#foto-link {
+    display: inline-block;
+    text-align: center;
+    border: 2px solid #ccc;
+    padding: 5px;
+    border-radius: 10px;
+    transition: box-shadow 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+#foto-link:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#foto-link strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+#foto-link img {
+    display: block;
+    max-width: 100px;
+    max-height: 100px;
+    margin: 0 auto;
+    border-radius: 5px;
+}
