@@ -16,7 +16,7 @@ from django.contrib.auth import logout as auth_logout
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.http import JsonResponse
-
+from django.core.paginator import Paginator
 
 def index(request):
     return render(request, 'index.html')
@@ -228,7 +228,12 @@ def lista_productos(request):
             'detalles': detalles_con_totales
         })
 
-    return render(request, 'lista.html', {'ordenes_con_factura': ordenes_con_factura, 'es_superusuario': request.user.is_superuser})
+    # Configurar la paginación
+    paginator = Paginator(ordenes_con_factura, 2)  # Muestra 2 órdenes por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'lista.html', {'page_obj': page_obj, 'es_superusuario': request.user.is_superuser})
 
 def logout_view(request):
     auth_logout(request)

@@ -18,9 +18,9 @@
             <h1>Lista de órdenes y facturas</h1>
         </div>
 
-        {% for item in ordenes_con_factura %}
+        {% for item in page_obj %}
         <div class="orden">
-            <h2>Orden de Compra</h2>
+            <h2>Orden de Compra #{{item.orden.id}}</h2>
             <div class="info-container">
                 <table>
                     <tr>
@@ -172,6 +172,26 @@
             </div>
         </div>
         {% endfor %}
+
+        <!-- Paginación -->
+        <div class="pagination">
+            <span class="step-links">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1">&laquo; primero</a>
+                    <a href="?page={{ page_obj.previous_page_number }}">anterior</a>
+                {% endif %}
+
+                <span class="current">
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}">siguiente</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}">último &raquo;</a>
+                {% endif %}
+            </span>
+        </div>
+
         {% if not es_superusuario %}
             <div class="button-container">
                 <a href="{% url 'orden_de_compra' %}" class="btn"><button class="btn" id="nuevaOrdenCompraBtn">Nueva Orden de Compra</button></a>
@@ -220,8 +240,8 @@
                     });
                     y = doc.lastAutoTable.finalY + 10; // Update y coordinate
 
-                    // Información de la factura
-                    doc.text('Detalles de la Factura', 10, y);
+                    // Detalle de productos
+                    doc.text('Detalle de productos', 10, y);
                     y += 10;
                     doc.autoTable({
                         startY: y,
@@ -235,61 +255,56 @@
             document.querySelectorAll('.modificar-estado').forEach(button => {
                 button.addEventListener('click', function() {
                     const ordenId = this.dataset.ordenId;
+
                     Swal.fire({
-                        title: 'Modificar Estado de Factura',
-                        html:
-                            '<label for="estado">Estado:</label>' +
-                            '<select id="estado" class="swal2-input">' +
-                            '<option value="Entregado">Entregado</option>' +
-                            '<option value="Rechazado">Rechazado</option>' +
-                            '</select>' +
-                            '<br>' +
-                            '<label for="motivo">Motivo:</label>' +
-                            '<textarea id="motivo" class="swal2-textarea"></textarea>',
-                        preConfirm: () => {
-                            const estado = document.getElementById('estado').value;
-                            const motivo = document.getElementById('motivo').value;
-                            return { estado: estado, motivo: motivo };
+                        title: 'Modificar Estado de la Orden #' + ordenId,
+                        input: 'select',
+                        inputOptions: {
+                            'Por entregar': 'Por entregar',
+                            'Entregado': 'Entregado',
+                            'Devuelto': 'Devuelto'
                         },
+                        inputPlaceholder: 'Selecciona un estado',
                         showCancelButton: true,
                         confirmButtonText: 'Guardar',
-                        cancelButtonText: 'Cancelar'
-                    }).then((result) => {
+                        cancelButtonText: 'Cancelar',
+                        inputValidator: function(value) {
+                            return new Promise(function(resolve) {
+                                if (value) {
+                                    resolve();
+                                } else {
+                                    resolve('Debes seleccionar un estado');
+                                }
+                            });
+                        }
+                    }).then(function(result) {
                         if (result.isConfirmed) {
-                            const estado = result.value.estado;
-                            const motivo = result.value.motivo;
+                            const nuevoEstado = result.value;
 
-                            fetch(`/ordenes/${ordenId}/modificar_estado/`, {
+                            fetch("{% url 'modificar_estado_orden' orden_id=0 %}".replace("0", ordenId), {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
                                     'X-CSRFToken': '{{ csrf_token }}'
                                 },
-                                body: JSON.stringify({ estado: estado, motivo: motivo })
-                            }).then(response => {
+                                body: JSON.stringify({ nuevo_estado: nuevoEstado })
+                            })
+                            .then(response => {
                                 if (response.ok) {
-                                    Swal.fire('Éxito', 'El estado se cambió correctamente.', 'success').then(() => {
-                                        location.reload();
-                                    });
+                                    Swal.fire('Estado modificado', 'El estado de la orden ha sido modificado correctamente', 'success')
+                                        .then(() => location.reload());
                                 } else {
-                                    Swal.fire('Error', 'No se pudo modificar el estado.', 'error');
+                                    Swal.fire('Error', 'Ocurrió un error al modificar el estado de la orden', 'error');
                                 }
-                            }).catch(error => {
-                                Swal.fire('Error', 'Hubo un problema con la solicitud.', 'error');
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                Swal.fire('Error', 'Ocurrió un error al modificar el estado de la orden', 'error');
                             });
                         }
                     });
                 });
             });
-
-            {% if messages %}
-                Swal.fire({
-                    title: 'Éxito',
-                    text: '{{ messages|last }}',
-                    icon: 'success',
-                    confirmButtonText: 'OK'
-                });
-            {% endif %}
         });
     </script>
 </body>

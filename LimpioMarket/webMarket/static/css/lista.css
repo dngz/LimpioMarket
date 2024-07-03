@@ -151,4 +151,26 @@ h1 {
 .btn:hover {
     background-color: #004494;
 }
+.pagination {
+    text-align: center;
+    margin-top: 20px;
+}
 
+.pagination .step-links {
+    display: inline-block;
+}
+
+.pagination a {
+    color: #007bff;
+    text-decoration: none;
+    margin: 0 5px;
+}
+
+.pagination a:hover {
+    text-decoration: underline;
+}
+
+.pagination .current {
+    margin: 0 5px;
+    font-weight: bold;
+}
