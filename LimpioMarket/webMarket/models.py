@@ -104,6 +104,11 @@ class Factura(models.Model):
     estado = models.CharField(max_length=20, default='Por entregar')
     motivo = models.TextField(null=True, blank=True)
 
+    # Nuevos campos para el estado 'Entregado'
+    rut = models.CharField(max_length=12, null=True, blank=True)
+    direccion = models.CharField(max_length=255, null=True, blank=True)
+    foto = models.ImageField(upload_to='static/img/', null=True, blank=True)
+
     def __str__(self):
         return self.numero_factura
 

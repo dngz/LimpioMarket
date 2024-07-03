@@ -8,6 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.0/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* Estilos adicionales si es necesario */
+    </style>
 </head>
 
 <body>
@@ -16,69 +19,106 @@
             style="margin-right: 80%;">Volver</a>
     </div>
     <div class="container">
-        <div class="logo-container" style="display: flex; align-items: center; margin-left: 15%;">
-            <img src="{% static 'img/l.png' %}" alt="Logo" width="100" style="margin-right: 10px;">
-            <h1>Facturas Entregadas</h1>
+        <div class="logo-container">
+            <img src="{% static 'img/l.png' %}" alt="Logo" width="100">
+            <h1>Facturas Recibidas</h1>
         </div>
 
         {% for item in page_obj %}
-        <div class="factura">
-            <h2>Factura</h2>
+        <div class="orden">
+            <h2>Orden de Compra #{{ item.orden.id }}</h2>
             <div class="info-container">
-                <table class="factura-tabla">
-                    <thead>
-                        <tr>
-                            <td colspan="4"><strong>ID de Factura:</strong> {{ item.factura.numero_factura }}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="4"><strong>Estado:</strong> {{ item.factura.estado }}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="4"><strong>Motivo:</strong> {{ item.factura.motivo }}</td>
-                        </tr>
-                        <tr>
-                            <th>Productos</th>
-                            <th>Cantidad</th>
-                            <th>Precio Unitario</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for detalle in item.detalles %}
-                        <tr>
-                            <td>{{ detalle.producto.nombre }}</td>
-                            <td>{{ detalle.cantidad }}</td>
-                            <td>{{ detalle.producto.precio }}</td>
-                            <td>{{ detalle.total }}</td>
-                        </tr>
-                        {% endfor %}
-                        <tr>
-                            <td colspan="3" style="text-align: right;"><strong>Subtotal:</strong></td>
-                            <td>{{ item.factura.subtotal|floatformat:0 }}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3" style="text-align: right;"><strong>IVA(19%):</strong></td>
-                            <td>{{ item.factura.impuestos|floatformat:0 }}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3" style="text-align: right;"><strong>Descuento:</strong></td>
-                            <td>0</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3" style="text-align: right;"><strong>Envio:</strong></td>
-                            <td>0</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3" style="text-align: right;"><strong>Total Factura:</strong></td>
-                            <td>{{ item.factura.total|floatformat:0 }}</td>
-                        </tr>
-                    </tbody>
+                <table>
+                    <tr>
+                        <td>ID de Orden:</td>
+                        <td>{{ item.orden.id }}</td>
+                    </tr>
+                    <tr>
+                        <td>Usuario:</td>
+                        <td>{{ item.orden.usuario.nombre_usuario }}</td>
+                    </tr>
+                    <tr>
+                        <td>Fecha:</td>
+                        <td>{{ item.orden.fecha }}</td>
+                    </tr>
                 </table>
             </div>
-            <div class="button-container">
-                <button class="btn exportar-pdf" data-factura-id="{{ item.factura.numero_factura }}">Exportar como
-                    PDF</button>
+
+            <div class="factura">
+                <h2>Factura</h2>
+                <div class="info-container">
+                    <table class="factura-tabla">
+                        <thead>
+                            <tr>
+                                <th colspan="4"><strong>ID de Factura:</strong> {{ item.factura.numero_factura }}</th>
+                            </tr>
+                            <tr>
+                                <td colspan="4"><strong>Estado:</strong> {{ item.factura.estado }}</td>
+                            </tr>
+                            <tr>
+                                <th>Productos</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unitario</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detalle in item.detalles %}
+                            <tr>
+                                <td>{{ detalle.producto.nombre }}</td>
+                                <td>{{ detalle.cantidad }}</td>
+                                <td>{{ detalle.producto.precio }}</td>
+                                <td>{{ detalle.total }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr>
+                                <td colspan="3" style="text-align: right;"><strong>Subtotal:</strong></td>
+                                <td>{{ item.factura.subtotal|floatformat:0 }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: right;"><strong>IVA(19%):</strong></td>
+                                <td>{{ item.factura.impuestos|floatformat:0 }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: right;"><strong>Descuento:</strong></td>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: right;"><strong>Envio:</strong></td>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: right;"><strong>Total Factura:</strong></td>
+                                <td>{{ item.factura.total|floatformat:0 }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="info-container" >
+                    <table>
+                        <tr>
+                            <td>Rut receptor: </td>
+                            <td>{{item.factura.rut}}</td>
+                        </tr>
+                        <tr>
+                            <td>Dirección de entrega:</td>
+                            <td>{{item.factura.direccion}}</td>
+                        </tr>
+                        <tr>
+                            <td>Foto evidencia:</td>
+                            <td> <a href="{{ item.factura.foto }}" target="_blank">
+                                    <img src="{{ item.factura.foto }}" alt="Foto"
+                                        style="max-width: 100px; max-height: 100px;">
+                                </a></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="button-container">
+                    <button class="btn exportar-pdf" data-factura-id="{{ item.factura.numero_factura }}">Exportar como
+                        PDF</button>
+                </div>
             </div>
+
         </div>
         {% endfor %}
 
@@ -87,14 +127,11 @@
             <ul class="pagination">
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1" aria-label="Primero">
-                        &laquo; Primero
-                    </a>
+                    <a class="page-link" href="?page=1" aria-label="Primero">&laquo; Primero</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
-                        Anterior
-                    </a>
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}"
+                        aria-label="Anterior">Anterior</a>
                 </li>
                 {% endif %}
 
@@ -111,55 +148,55 @@
 
                     {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Siguiente">
-                            Siguiente
-                        </a>
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}"
+                            aria-label="Siguiente">Siguiente</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Último">
-                            Último &raquo;
-                        </a>
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Último">Último
+                            &raquo;</a>
                     </li>
                     {% endif %}
             </ul>
         </div>
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const { jsPDF } = window.jspdf;
+    </div>
 
-                document.querySelectorAll('.exportar-pdf').forEach(button => {
-                    button.addEventListener('click', function () {
-                        const facturaId = this.dataset.facturaId;
-                        const facturaElement = this.closest('.factura');
-                        const doc = new jsPDF();
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const { jsPDF } = window.jspdf;
 
-                        // Set initial y coordinate for text and tables
-                        let y = 10;
+            document.querySelectorAll('.exportar-pdf').forEach(button => {
+                button.addEventListener('click', function () {
+                    const facturaId = this.dataset.facturaId;
+                    const facturaElement = this.closest('.factura');
+                    const doc = new jsPDF();
 
-                        // Add Factura title
-                        doc.text('Factura', 10, y);
-                        y += 10;
+                    // Set initial y coordinate for text and tables
+                    let y = 10;
 
-                        // Información de la factura
-                        doc.autoTable({
-                            startY: y,
-                            html: facturaElement.querySelector('.info-container table')
-                        });
-                        y = doc.lastAutoTable.finalY + 10; // Update y coordinate
+                    // Add Factura title
+                    doc.text('Factura', 10, y);
+                    y += 10;
 
-                        // Información de la factura
-                        doc.text('Detalles de la Factura', 10, y);
-                        y += 10;
-                        doc.autoTable({
-                            startY: y,
-                            html: facturaElement.querySelector('.factura-tabla')
-                        });
-
-                        doc.save('factura_' + facturaId + '.pdf');
+                    // Información de la factura
+                    doc.autoTable({
+                        startY: y,
+                        html: facturaElement.querySelector('.info-container table')
                     });
+                    y = doc.lastAutoTable.finalY + 10; // Update y coordinate
+
+                    // Información de la factura
+                    doc.text('Detalles de la Factura', 10, y);
+                    y += 10;
+                    doc.autoTable({
+                        startY: y,
+                        html: facturaElement.querySelector('.factura-tabla')
+                    });
+
+                    doc.save('factura_' + facturaId + '.pdf');
                 });
             });
-        </script>
+        });
+    </script>
 </body>
 
 </html>

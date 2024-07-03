@@ -273,25 +273,55 @@ def logout_view(request):
 def modificar_estado_orden(request, orden_id):
     if request.method == 'POST' and request.user.is_superuser:
         orden = get_object_or_404(OrdenDeCompra, id=orden_id)
-        data = json.loads(request.body.decode('utf-8'))
-        estado = data.get('estado')
-        motivo = data.get('motivo')
         
-        if estado and motivo:
+        if request.content_type == 'application/json':
+            # Cuando los datos son enviados como JSON
+            data = json.loads(request.body.decode('utf-8'))
+        else:
+            # Cuando los datos son enviados como form-data (para manejar archivos)
+            data = request.POST
+
+        estado = data.get('estado')
+        
+        if estado:
+            if estado == 'Entregado':
+                rut = data.get('rut')
+                direccion = data.get('direccion')
+                foto = request.FILES.get('foto')
+
+                if not rut or not direccion or not foto:
+                    return JsonResponse({'error': 'Debe proporcionar RUT, dirección y foto para el estado "Entregado".'}, status=400)
+                
+                # Guardar los detalles adicionales en la factura
+                orden.factura.rut = rut
+                orden.factura.direccion = direccion
+                orden.factura.foto = foto
+
+                # Asignar "Entregado" como motivo predeterminado
+                motivo = "Entregado"
+            
+            elif estado == 'Rechazado':
+                motivo = data.get('motivo')
+                if not motivo:
+                    return JsonResponse({'error': 'Debe proporcionar un motivo para el estado "Rechazado".'}, status=400)
+                
+                # Guardar el motivo en la factura
+                orden.factura.motivo = motivo
+            
             # Crear un nuevo registro en DetalleEstado
             DetalleEstado.objects.create(
                 factura=orden.factura,
                 estado=estado,
-                motivo=motivo
+                motivo=motivo  # Guardar el motivo "Entregado" o el proporcionado
             )
-
-            orden.factura.estado = estado
-            orden.factura.motivo = motivo
-            orden.factura.save()
             
+            # Actualizar el estado de la factura
+            orden.factura.estado = estado
+            orden.factura.save()
+
             return JsonResponse({'success': 'Estado de la orden actualizado con éxito.'})
         else:
-            return JsonResponse({'error': 'Debe ingresar un estado y un motivo.'}, status=400)
+            return JsonResponse({'error': 'Debe ingresar un estado.'}, status=400)
     return JsonResponse({'error': 'Método no permitido.'}, status=405)
 
 @login_required
@@ -338,7 +368,11 @@ def modificar_estado(request, orden_id):
 
 @login_required
 def lista_facturas_entregadas(request):
-    facturas_entregadas = Factura.objects.filter(estado='Entregado').prefetch_related('orden_de_compra__detalles__producto')
+    # Filtrar facturas entregadas que pertenecen al usuario actual
+    facturas_entregadas = Factura.objects.filter(
+        estado='Entregado',
+        orden_de_compra__usuario=request.user  # Asumiendo que hay un campo 'usuario' en la orden de compra
+    ).prefetch_related('orden_de_compra__detalles__producto')
     
     facturas_con_detalles = []
     for factura in facturas_entregadas:

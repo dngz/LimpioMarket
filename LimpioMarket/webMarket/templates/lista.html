@@ -120,9 +120,26 @@
                         <tr>
                             <td colspan="4"><strong>Estado:</strong> {{ item.factura.estado }}</td>
                         </tr>
+                        {% if item.factura.estado == "Rechazado" %}
                         <tr>
-                            <td colspan="4"><strong>Motivo:</strong> {{ item.factura.motivo }}</td> <!-- Nuevo campo -->
+                            <td colspan="4"><strong>Motivo:</strong> {{ item.factura.motivo }}</td>
                         </tr>
+                        {% elif item.factura.estado == "Entregado" %}
+                        <tr>
+                            <td colspan="4"><strong>RUT:</strong> {{ item.factura.rut }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Dirección:</strong> {{ item.factura.direccion }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4">
+                                <strong>Foto:</strong>
+                                <a href="{{ item.factura.foto }}" target="_blank">
+                                    <img src="{{ item.factura.foto }}" alt="Foto" style="max-width: 100px; max-height: 100px;">
+                                </a>
+                            </td>
+                        </tr>
+                        {% endif %}
                         {% if item.factura.condicion == "rectificado" %}
                         <td colspan="4" style="color: red;">
                             <h5>*Factura rectificada</h5>
@@ -222,7 +239,7 @@
         </div>
         {% if not es_superusuario %}
         <div class="button-container">
-            <a href="{% url 'facturas_entregadas' %}" class="btn">Ver Facturas Entregadas</a>
+            <a href="{% url 'facturas_entregadas' %}" class="btn">Mis facturas recibidas</a>
         </div>
 
         <div class="button-container">
@@ -232,118 +249,158 @@
         {% endif %}
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const { jsPDF } = window.jspdf;
+document.addEventListener('DOMContentLoaded', function () {
+    const { jsPDF } = window.jspdf;
 
-            document.querySelectorAll('.exportar-pdf').forEach(button => {
-                button.addEventListener('click', function () {
-                    const facturaId = this.dataset.facturaId;
-                    const facturaElement = this.closest('.orden');
-                    const doc = new jsPDF();
+    document.querySelectorAll('.exportar-pdf').forEach(button => {
+        button.addEventListener('click', function () {
+            const facturaId = this.dataset.facturaId;
+            const facturaElement = this.closest('.orden');
+            const doc = new jsPDF();
 
-                    // Set initial y coordinate for text and tables
-                    let y = 10;
+            let y = 10;
 
-                    // Add Factura title
-                    doc.text('Factura', 10, y);
-                    y += 10;
+            doc.text('Factura', 10, y);
+            y += 10;
 
-                    // Información de la factura
-                    doc.autoTable({
-                        startY: y,
-                        html: facturaElement.querySelector('.info-container table')
-                    });
-                    y = doc.lastAutoTable.finalY + 10; // Update y coordinate
+            doc.autoTable({
+                startY: y,
+                html: facturaElement.querySelector('.info-container table')
+            });
+            y = doc.lastAutoTable.finalY + 10;
 
-                    // Información del vendedor
-                    doc.text('Vendedor', 10, y);
-                    y += 10;
-                    doc.autoTable({
-                        startY: y,
-                        html: facturaElement.querySelector('.vendedor table')
-                    });
-                    y = doc.lastAutoTable.finalY + 10; // Update y coordinate
+            doc.text('Vendedor', 10, y);
+            y += 10;
+            doc.autoTable({
+                startY: y,
+                html: facturaElement.querySelector('.vendedor table')
+            });
+            y = doc.lastAutoTable.finalY + 10;
 
-                    // Información del comprador
-                    doc.text('Comprador', 10, y);
-                    y += 10;
-                    doc.autoTable({
-                        startY: y,
-                        html: facturaElement.querySelector('.comprador table')
-                    });
-                    y = doc.lastAutoTable.finalY + 10; // Update y coordinate
+            doc.text('Comprador', 10, y);
+            y += 10;
+            doc.autoTable({
+                startY: y,
+                html: facturaElement.querySelector('.comprador table')
+            });
+            y = doc.lastAutoTable.finalY + 10;
 
-                    // Información de la factura
-                    doc.text('Detalles de la Factura', 10, y);
-                    y += 10;
-                    doc.autoTable({
-                        startY: y,
-                        html: facturaElement.querySelector('.factura-tabla')
-                    });
-
-                    doc.save('factura_' + facturaId + '.pdf');
-                });
+            doc.text('Detalles de la Factura', 10, y);
+            y += 10;
+            doc.autoTable({
+                startY: y,
+                html: facturaElement.querySelector('.factura-tabla')
             });
 
-            document.querySelectorAll('.modificar-estado').forEach(button => {
-                button.addEventListener('click', function () {
-                    const ordenId = this.dataset.ordenId;
-                    Swal.fire({
-                        title: 'Modificar Estado de Factura',
-                        html:
-                            '<label for="estado">Estado:</label>' +
-                            '<select id="estado" class="swal2-input">' +
-                            '<option value="Entregado">Entregado</option>' +
-                            '<option value="Rechazado">Rechazado</option>' +
-                            '</select>' +
-                            '<br>' +
-                            '<label for="motivo">Motivo:</label>' +
-                            '<textarea id="motivo" class="swal2-textarea"></textarea>',
-                        preConfirm: () => {
-                            const estado = document.getElementById('estado').value;
-                            const motivo = document.getElementById('motivo').value;
-                            return { estado: estado, motivo: motivo };
-                        },
-                        showCancelButton: true,
-                        confirmButtonText: 'Guardar',
-                        cancelButtonText: 'Cancelar'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            const estado = result.value.estado;
-                            const motivo = result.value.motivo;
-
-                            fetch(`/ordenes/${ordenId}/modificar_estado/`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRFToken': '{{ csrf_token }}'
-                                },
-                                body: JSON.stringify({ estado: estado, motivo: motivo })
-                            }).then(response => {
-                                if (response.ok) {
-                                    Swal.fire('Éxito', 'El estado se cambió correctamente.', 'success').then(() => {
-                                        location.reload();
-                                    });
-                                } else {
-                                    Swal.fire('Error', 'No se pudo modificar el estado.', 'error');
-                                }
-                            }).catch(error => {
-                                Swal.fire('Error', 'Hubo un problema con la solicitud.', 'error');
-                            });
-                        }
-                    });
-                });
-            });
-
-            {% if messages %}
-            Swal.fire({
-                title: 'Éxito',
-                text: '{{ messages|last }}',
-                icon: 'success',
-                confirmButtonText: 'OK'
-            });
-            {% endif %}
+            doc.save('factura_' + facturaId + '.pdf');
         });
+    });
+
+    document.querySelectorAll('.modificar-estado').forEach(button => {
+    button.addEventListener('click', function () {
+        const ordenId = this.dataset.ordenId;
+        Swal.fire({
+            title: 'Modificar Estado de Factura',
+            html:
+                '<label for="estado">Estado:</label>' +
+                '<select id="estado" class="swal2-input">' +
+                '<option value="Entregado">Entregado</option>' +
+                '<option value="Rechazado">Rechazado</option>' +
+                '</select>' +
+                '<div id="entregado-fields" style="display: none; margin-top: 10px;">' +
+                '<label for="rut">RUT:</label>' +
+                '<input id="rut" class="swal2-input" type="text" />' +
+                '<label for="direccion">Dirección:</label>' +
+                '<input id="direccion" class="swal2-input" type="text" />' +
+                '<label for="foto">Adjuntar Foto:</label>' +
+                '<input id="foto" class="swal2-file" type="file" accept="image/*" />' +
+                '</div>' +
+                '<div id="rechazado-fields" style="margin-top: 10px;">' +
+                '<label for="motivo">Motivo:</label>' +
+                '<textarea id="motivo" class="swal2-textarea"></textarea>' +
+                '</div>',
+            preConfirm: () => {
+                const estado = document.getElementById('estado').value;
+                let data = { estado: estado };
+                if (estado === 'Entregado') {
+                    data.rut = document.getElementById('rut').value;
+                    data.direccion = document.getElementById('direccion').value;
+                    const foto = document.getElementById('foto').files[0];
+                    if (foto) {
+                        data.foto = foto;
+                    }
+                } else if (estado === 'Rechazado') {
+                    data.motivo = document.getElementById('motivo').value;
+                }
+                return data;
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar',
+            didOpen: () => {
+                const estadoSelect = document.getElementById('estado');
+                const entregadoFields = document.getElementById('entregado-fields');
+                const rechazadoFields = document.getElementById('rechazado-fields');
+
+                estadoSelect.addEventListener('change', function () {
+                    if (this.value === 'Entregado') {
+                        entregadoFields.style.display = 'block';
+                        rechazadoFields.style.display = 'none';
+                    } else {
+                        entregadoFields.style.display = 'none';
+                        rechazadoFields.style.display = 'block';
+                    }
+                });
+
+                estadoSelect.dispatchEvent(new Event('change'));
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const data = result.value;
+
+                const formData = new FormData();
+                formData.append('estado', data.estado);
+                if (data.estado === 'Entregado') {
+                    formData.append('rut', data.rut);
+                    formData.append('direccion', data.direccion);
+                    if (data.foto) {
+                        formData.append('foto', data.foto);
+                    }
+                } else if (data.estado === 'Rechazado') {
+                    formData.append('motivo', data.motivo);
+                }
+
+                fetch(`/ordenes/${ordenId}/modificar_estado/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: formData
+                }).then(response => {
+                    if (response.ok) {
+                        Swal.fire('Éxito', 'El estado se cambió correctamente.', 'success').then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error', 'No se pudo modificar el estado.', 'error');
+                    }
+                }).catch(error => {
+                    Swal.fire('Error', 'Hubo un problema con la solicitud.', 'error');
+                });
+            }
+        });
+    });
+});
+
+    {% if messages %}
+    Swal.fire({
+        title: 'Éxito',
+        text: '{{ messages|last }}',
+        icon: 'success',
+        confirmButtonText: 'OK'
+    });
+    {% endif %}
+});
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
