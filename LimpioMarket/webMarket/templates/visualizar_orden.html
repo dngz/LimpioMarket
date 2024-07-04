@@ -22,7 +22,7 @@
                 </tr>
                 <tr>
                     <td>Usuario:</td>
-                    <td><input type="text" name="nombre_usuario" value="{{ orden.usuario.nombre_usuario }}" required></td>
+                    <td>{{orden.usuario.nombre_usuario}}</td>
                 </tr>
                 <tr>
                     <td>Nombre Completo:</td>
@@ -107,17 +107,12 @@
             form.addEventListener('submit', function(event) {
                 event.preventDefault();
 
-                const nombreUsuario = form.querySelector('input[name="nombre_usuario"]').value.trim();
                 const nombreCompleto = form.querySelector('input[name="nombre_completo"]').value.trim();
                 const rut = form.querySelector('input[name="rut"]').value.trim();
                 const email = form.querySelector('input[name="email"]').value.trim();
                 const telefono = form.querySelector('input[name="telefono"]').value.trim();
                 const direccion = form.querySelector('input[name="direccion"]').value.trim();
 
-                if (!nombreUsuario) {
-                    Swal.fire('Error', 'El nombre de usuario es obligatorio.', 'error');
-                    return;
-                }
 
                 if (nombreCompleto.length < 5) {
                     Swal.fire('Error', 'El nombre completo debe tener al menos 5 caracteres.', 'error');
