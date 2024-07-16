@@ -270,12 +270,10 @@ def lista_productos(request):
         facturas_creadas = Factura.objects.filter(condicion='creada', orden_de_compra__usuario=usuario).count()
         facturas_anuladas = Factura.objects.filter(condicion='Anulada', orden_de_compra__usuario=usuario).count()
         facturas_rectificadas = Factura.objects.filter(condicion='rectificado', orden_de_compra__usuario=usuario).count()
-        facturas_por_entregar = Factura.objects.filter(estado='Por entregar', orden_de_compra__usuario=usuario).count()
+        facturas_por_entregar = Factura.objects.filter(estado='Por Entregar', orden_de_compra__usuario=usuario).count()
         facturas_entregadas = Factura.objects.filter(estado='Entregado', orden_de_compra__usuario=usuario).count()
         facturas_rechazadas = Factura.objects.filter(estado='Rechazado', orden_de_compra__usuario=usuario).count()
 
-    # Excluyendo las rectificadas del conteo de creadas
-    facturas_creadas -= facturas_rectificadas
     if facturas_creadas < 0:
         facturas_creadas = 0
     paginator = Paginator(ordenes_con_factura, 1)  # Muestra 2 órdenes por página
