@@ -18,12 +18,16 @@
     <div class="container">
         <div class="logo-container" style="display: flex; align-items: center; margin-left: 15%;">
             <img src="{% static 'img/l.png' %}" alt="Logo" width="100" style="margin-right: 10px;">
-            <h1>Lista de órdenes y facturas</h1>
+            <h1>Lista de órdenes y facturas
+                <button id="infoButton" style="background: none; border: none; cursor: pointer; margin-left: 10px;">
+                    <img src="{% static 'img/info-icon.png' %}" alt="Info" width="20">
+                </button>
+            </h1>
         </div>
 
         {% for item in page_obj %}
         <div class="orden">
-            <h2 onclick="toggleDetallesEstado({{ item.orden.id }})" style="cursor: pointer;">Orden de Compra #{{ item.orden.id }}</h2>
+            <h2>Orden de Compra #{{item.orden.id}}</h2>
             <div class="info-container">
                 <table>
                     <tr>
@@ -44,15 +48,7 @@
                     </tr>
                 </table>
             </div>
-            <div id="detalles-estado-{{ item.orden.id }}" class="detalles-estado" style="display: none;">
-                <h3>Detalles del Estado:</h3>
-                <ul>
-                    {% for detalle in item.factura.detalles_estado.all %}
-                        <li>{{ detalle.estado }} - {{ detalle.motivo }} - {{ detalle.fecha_cambio }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
+
             <div class="vendedor-comprador-container">
                 <div class="vendedor">
                     <table class="vendedor-comprador-tabla">
@@ -120,7 +116,9 @@
 
             <h2>Factura</h2>
             <div class="info-container">
-                <table class="factura-tabla">
+
+                <table class="factura-tabla" data-estado="{{ item.factura.estado }}">
+
                     <thead>
                         <tr>
                             <td colspan="4"><strong>ID de Factura:</strong> {{ item.factura.numero_factura }}</td>
@@ -143,9 +141,10 @@
                             <td colspan="4">
                                 <strong>Foto:</strong>
                                 <a id="foto-link" href="{{ item.factura.foto.url }}" target="_blank">
-                                    <img src="{{ item.factura.foto }}" alt="Ver Foto" style="max-width: 100px; max-height: 100px;">
+                                    <img src="{{ item.factura.foto }}" alt="Ver Foto"
+                                        style="max-width: 100px; max-height: 100px;">
                                 </a>
-                            </td>   
+                            </td>
                         </tr>
                         {% endif %}
                         {% if item.factura.condicion == "rectificado" %}
@@ -153,7 +152,7 @@
                             <h5>*Factura rectificada</h5>
                         </td>
                         {% endif %}
-                        <tr>    
+                        <tr>
                             <th>Productos</th>
                             <th>Cantidad</th>
                             <th>Precio Unitario</th>
@@ -193,14 +192,17 @@
                 </table>
             </div>
             <div class="button-container">
-                <button class="btn exportar-pdf" data-factura-id="{{ item.factura.numero_factura }}">Exportar como
-                    PDF</button>
-                {% if not es_superusuario %}
-                <a href="{% url 'visualizar_orden' item.orden.id %}" class="btn modificar-orden">Modificar Orden</a>
-                {% else %}
-                {% if item.factura.estado != "Entregado" %}
-                <button class="btn modificar-estado" data-orden-id="{{ item.orden.id }}">Modificar Estado</button>
-                {% endif %}
+                <button class="btn exportar-pdf" data-factura-id="{{ item.factura.numero_factura }}">Exportar como PDF</button>
+            
+                {% if item.factura.estado != 'Entregado' and item.factura.estado != 'Anulada' %}
+                    {% if not es_superusuario %}
+                        <a href="{% url 'visualizar_orden' item.orden.id %}" class="btn modificar-orden">Modificar Orden</a>
+                    {% else %}
+                        <button class="btn modificar-estado" data-orden-id="{{ item.orden.id }}">Modificar Estado</button>
+                        <div class="button-container">
+                            <button class="btn anular-factura" data-orden-id="{{ item.orden.id }}">Anular Factura</button>
+                        </div>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -262,6 +264,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const { jsPDF } = window.jspdf;
 
+    // Exportar PDF
     document.querySelectorAll('.exportar-pdf').forEach(button => {
         button.addEventListener('click', function () {
             const facturaId = this.dataset.facturaId;
@@ -301,142 +304,162 @@ document.addEventListener('DOMContentLoaded', function () {
                 startY: y,
                 html: facturaElement.querySelector('.factura-tabla')
             });
+            y = doc.lastAutoTable.finalY + 10;
+
+            // Al final del dibujo de todos los elementos de la factura, verifica y dibuja el texto "ANULADA" si es necesario
+            if (facturaElement.querySelector('.factura-tabla').dataset.estado === 'Anulada') {
+                // Guardar el estado actual del gráfico
+                doc.saveGraphicsState();
+                
+                // Cambiar la transparencia para asegurarse de que el texto "ANULADA" se vea encima de todo
+                doc.setGState(new doc.GState({ opacity: 0.5 }));
+                
+                // Dibujar el texto "ANULADA" en grande y centrado
+                doc.setFontSize(100);  // Cambia el tamaño de la fuente
+                doc.setTextColor(255, 0, 0);
+                doc.text('ANULADA', 105, 150, { align: 'center', angle: 45 });  // Cambia la posición y agrega rotación si es necesario
+                
+                // Restaurar el estado anterior del gráfico
+                doc.restoreGraphicsState();
+            }
 
             doc.save('factura_' + facturaId + '.pdf');
         });
     });
 
-    document.querySelectorAll('.modificar-estado').forEach(button => {
-    button.addEventListener('click', function () {
-        const ordenId = this.dataset.ordenId;
-        Swal.fire({
-            title: 'Modificar Estado de Factura',
-            html:
-                '<label for="estado">Estado:</label>' +
-                '<select id="estado" class="swal2-input">' +
-                '<option value="Entregado">Entregado</option>' +
-                '<option value="Rechazado">Rechazado</option>' +
-                '</select>' +
-                '<div id="entregado-fields" style="display: none; margin-top: 10px;">' +
-                '<label for="rut">RUT:</label>' +
-                '<input id="rut" class="swal2-input" type="text" />' +
-                '<label for="direccion">Dirección:</label>' +
-                '<input id="direccion" class="swal2-input" type="text" />' +
-                '<label for="foto">Adjuntar Foto:</label>' +
-                '<input id="foto" class="swal2-file" type="file" accept="image/*" />' +
-                '</div>' +
-                '<div id="rechazado-fields" style="margin-top: 10px;">' +
-                '<label for="motivo">Motivo:</label>' +
-                '<textarea id="motivo" class="swal2-textarea"></textarea>' +
-                '</div>',
-            preConfirm: () => {
-                const estado = document.getElementById('estado').value;
-                let data = { estado: estado };
 
-                if (estado === 'Entregado') {
-                    const rut = document.getElementById('rut').value;
-                    const direccion = document.getElementById('direccion').value;
-                    const foto = document.getElementById('foto').files[0];
 
-                    if (!rut) {
-                        Swal.showValidationMessage('Por favor, ingrese el RUT.');
-                        return false;
-                    }
+            document.querySelectorAll('.modificar-estado').forEach(button => {
+                button.addEventListener('click', function () {
+                    const ordenId = this.dataset.ordenId;
+                    Swal.fire({
+                        title: 'Modificar Estado de Factura',
+                        html: `
+                            <label for="estado">Estado:</label>
+                            <select id="estado" class="swal2-input">
+                                <option value="Entregado">Entregado</option>
+                                <option value="Rechazado">Rechazado</option>
+                            </select>
+                            <div id="entregado-fields" style="display: none; margin-top: 10px;">
+                                <label for="rut">RUT:</label>
+                                <input id="rut" class="swal2-input" type="text" />
+                                <label for="direccion">Dirección:</label>
+                                <input id="direccion" class="swal2-input" type="text" />
+                                <label for="foto">Adjuntar Foto:</label>
+                                <input id="foto" class="swal2-file" type="file" accept="image/*" />
+                            </div>
+                            <div id="rechazado-fields" style="margin-top: 10px;">
+                                <label for="motivo">Motivo:</label>
+                                <textarea id="motivo" class="swal2-textarea"></textarea>
+                            </div>`,
+                        preConfirm: () => {
+                            const estado = document.getElementById('estado').value;
+                            let data = { estado: estado };
 
-                    if (!direccion || direccion.length < 6) {
-                        Swal.showValidationMessage('La dirección debe tener al menos 6 caracteres.');
-                        return false;
-                    }
+                            if (estado === 'Entregado') {
+                                const rut = document.getElementById('rut').value;
+                                const direccion = document.getElementById('direccion').value;
+                                const foto = document.getElementById('foto').files[0];
 
-                    if (!foto) {
-                        Swal.showValidationMessage('Por favor, adjunte una Foto.');
-                        return false;
-                    }
+                                if (!rut) {
+                                    Swal.showValidationMessage('Por favor, ingrese el RUT.');
+                                    return false;
+                                }
 
-                    data.rut = rut;
-                    data.direccion = direccion;
-                    data.foto = foto;
+                                if (!direccion || direccion.length < 6) {
+                                    Swal.showValidationMessage('La dirección debe tener al menos 6 caracteres.');
+                                    return false;
+                                }
 
-                } else if (estado === 'Rechazado') {
-                    const motivo = document.getElementById('motivo').value;
+                                if (!foto) {
+                                    Swal.showValidationMessage('Por favor, adjunte una Foto.');
+                                    return false;
+                                }
 
-                    if (!motivo || motivo.length < 8) {
-                        Swal.showValidationMessage('El motivo debe tener al menos 8 caracteres.');
-                        return false;
-                    }
+                                data.rut = rut;
+                                data.direccion = direccion;
+                                data.foto = foto;
 
-                    data.motivo = motivo;
-                }
+                            } else if (estado === 'Rechazado') {
+                                const motivo = document.getElementById('motivo').value;
 
-                return data;
-            },
-            showCancelButton: true,
-            confirmButtonText: 'Guardar',
-            cancelButtonText: 'Cancelar',
-            didOpen: () => {
-                const estadoSelect = document.getElementById('estado');
-                const entregadoFields = document.getElementById('entregado-fields');
-                const rechazadoFields = document.getElementById('rechazado-fields');
+                                if (!motivo || motivo.length < 8) {
+                                    Swal.showValidationMessage('El motivo debe tener al menos 8 caracteres.');
+                                    return false;
+                                }
 
-                estadoSelect.addEventListener('change', function () {
-                    if (this.value === 'Entregado') {
-                        entregadoFields.style.display = 'block';
-                        rechazadoFields.style.display = 'none';
-                    } else {
-                        entregadoFields.style.display = 'none';
-                        rechazadoFields.style.display = 'block';
-                    }
+                                data.motivo = motivo;
+                            }
+
+                            return data;
+                        },
+                        showCancelButton: true,
+                        confirmButtonText: 'Guardar',
+                        cancelButtonText: 'Cancelar',
+                        didOpen: () => {
+                            const estadoSelect = document.getElementById('estado');
+                            const entregadoFields = document.getElementById('entregado-fields');
+                            const rechazadoFields = document.getElementById('rechazado-fields');
+
+                            estadoSelect.addEventListener('change', function () {
+                                if (this.value === 'Entregado') {
+                                    entregadoFields.style.display = 'block';
+                                    rechazadoFields.style.display = 'none';
+                                } else {
+                                    entregadoFields.style.display = 'none';
+                                    rechazadoFields.style.display = 'block';
+                                }
+                            });
+
+                            estadoSelect.dispatchEvent(new Event('change'));
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            const data = result.value;
+
+                            const formData = new FormData();
+                            formData.append('estado', data.estado);
+                            if (data.estado === 'Entregado') {
+                                formData.append('rut', data.rut);
+                                formData.append('direccion', data.direccion);
+                                if (data.foto) {
+                                    formData.append('foto', data.foto);
+                                }
+                            } else if (data.estado === 'Rechazado') {
+                                formData.append('motivo', data.motivo);
+                            }
+
+                            fetch(`/ordenes/${ordenId}/modificar_estado/`, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRFToken': '{{ csrf_token }}'
+                                },
+                                body: formData
+                            }).then(response => {
+                                if (response.ok) {
+                                    Swal.fire('Éxito', 'El estado se cambió correctamente.', 'success').then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire('Error', 'No se pudo modificar el estado.', 'error');
+                                }
+                            }).catch(error => {
+                                Swal.fire('Error', 'Hubo un problema con la solicitud.', 'error');
+                            });
+                        }
+                    });
                 });
+            });
 
-                estadoSelect.dispatchEvent(new Event('change'));
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const data = result.value;
-
-                const formData = new FormData();
-                formData.append('estado', data.estado);
-                if (data.estado === 'Entregado') {
-                    formData.append('rut', data.rut);
-                    formData.append('direccion', data.direccion);
-                    if (data.foto) {
-                        formData.append('foto', data.foto);
-                    }
-                } else if (data.estado === 'Rechazado') {
-                    formData.append('motivo', data.motivo);
-                }
-
-                fetch(`/ordenes/${ordenId}/modificar_estado/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: formData
-                }).then(response => {
-                    if (response.ok) {
-                        Swal.fire('Éxito', 'El estado se cambió correctamente.', 'success').then(() => {
-                            location.reload();
-                        });
-                    } else {
-                        Swal.fire('Error', 'No se pudo modificar el estado.', 'error');
-                    }
-                }).catch(error => {
-                    Swal.fire('Error', 'Hubo un problema con la solicitud.', 'error');
-                });
-            }
+            {% if messages %}
+            Swal.fire({
+                title: 'Éxito',
+                text: '{{ messages|last }}',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+            {% endif %}
         });
-    });
-});
-
-    {% if messages %}
-    Swal.fire({
-        title: 'Éxito',
-        text: '{{ messages|last }}',
-        icon: 'success',
-        confirmButtonText: 'OK'
-    });
-    {% endif %}
-});
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -475,15 +498,62 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     </script>
+
     <script>
-        function toggleDetallesEstado(ordenId) {
-            const detallesEstadoDiv = document.getElementById(`detalles-estado-${ordenId}`);
-            if (detallesEstadoDiv.style.display === 'none') {
-                detallesEstadoDiv.style.display = 'block';
-            } else {
-                detallesEstadoDiv.style.display = 'none';
-            }
-        }
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.anular-factura').forEach(button => {
+                button.addEventListener('click', function () {
+                    const ordenId = this.dataset.ordenId;
+                    Swal.fire({
+                        title: 'Anular Factura',
+                        text: "¿Estás seguro de que quieres anular esta factura?",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, anular',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch(`/ordenes/${ordenId}/anular_factura/`, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRFToken': '{{ csrf_token }}',
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ estado: 'Anulada' })
+                            }).then(response => {
+                                if (response.ok) {
+                                    Swal.fire('Anulada', 'La factura ha sido anulada.', 'success').then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire('Error', 'No se pudo anular la factura.', 'error');
+                                }
+                            }).catch(error => {
+                                Swal.fire('Error', 'Hubo un problema con la solicitud.', 'error');
+                            });
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+    <script>
+        document.getElementById('infoButton').addEventListener('click', function () {
+            Swal.fire({
+                title: 'Conteo de Facturas',
+                html: `
+                <ul>
+                    <li>Facturas Creadas: <strong>{{ facturas_creadas }}</strong></li>
+                    <li>Facturas Rectificadas: <strong>{{ facturas_rectificadas }}</strong></li>
+                    <li>Facturas Anuladas: <strong>{{ facturas_anuladas }}</strong></li>
+                    <li>Facturas Por Entregar: <strong>{{ facturas_por_entregar }}</strong></li>
+                    <li>Facturas Entregadas: <strong>{{ facturas_entregadas }}</strong></li>
+                    <li>Facturas Rechazadas: <strong>{{ facturas_rechazadas }}</strong></li>
+                </ul>
+            `,
+                confirmButtonText: 'Cerrar'
+            });
+        });
     </script>
 </body>
 

@@ -17,6 +17,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.core.paginator import Paginator
+from django.urls import path
 
 def index(request):
     return render(request, 'index.html')
@@ -168,6 +169,7 @@ def actualizar_orden(request, orden_id):
         factura.subtotal = subtotal
         factura.impuestos = iva
         factura.total = total
+        factura.condicion = "rectificado"
         factura.estado = "Por Entregar"
         factura.save()
 
@@ -209,7 +211,6 @@ def lista_productos(request):
     usuario = request.user
 
     if request.user.is_superuser:
-        # Si el usuario es un superusuario, mostramos todas las órdenes
         ordenes = OrdenDeCompra.objects.all().prefetch_related('detalles__producto', 'factura__detalles_estado')
     else:
         try:
@@ -231,7 +232,7 @@ def lista_productos(request):
                 'impuestos': impuestos,
                 'total': total_factura,
                 'fecha_emision': timezone.now(),
-                'estado': 'Por entregar'  # Asignar valor por defecto al crear la factura
+                'estado': 'Por entregar'  
             }
         )
         if not created:
@@ -241,7 +242,6 @@ def lista_productos(request):
                 factura.total = total_factura
                 factura.save()
 
-        # Filtrar facturas para usuarios no superusuarios
         if request.user.is_superuser or factura.estado != 'Entregado':
             detalles_con_totales = [
                 {
@@ -259,12 +259,40 @@ def lista_productos(request):
                 'detalles': detalles_con_totales
             })
 
-    # Configurar la paginación
+    if request.user.is_superuser:
+        facturas_creadas = Factura.objects.filter(condicion='creada').count()
+        facturas_anuladas = Factura.objects.filter(condicion='Anulada').count()
+        facturas_rectificadas = Factura.objects.filter(condicion='rectificado').count()
+        facturas_por_entregar = Factura.objects.filter(estado='Por entregar').count()
+        facturas_entregadas = Factura.objects.filter(estado='Entregado').count()
+        facturas_rechazadas = Factura.objects.filter(estado='Rechazado').count()
+    else:
+        facturas_creadas = Factura.objects.filter(condicion='creada', orden_de_compra__usuario=usuario).count()
+        facturas_anuladas = Factura.objects.filter(condicion='Anulada', orden_de_compra__usuario=usuario).count()
+        facturas_rectificadas = Factura.objects.filter(condicion='rectificado', orden_de_compra__usuario=usuario).count()
+        facturas_por_entregar = Factura.objects.filter(estado='Por entregar', orden_de_compra__usuario=usuario).count()
+        facturas_entregadas = Factura.objects.filter(estado='Entregado', orden_de_compra__usuario=usuario).count()
+        facturas_rechazadas = Factura.objects.filter(estado='Rechazado', orden_de_compra__usuario=usuario).count()
+
+    # Excluyendo las rectificadas del conteo de creadas
+    facturas_creadas -= facturas_rectificadas
+    if facturas_creadas < 0:
+        facturas_creadas = 0
     paginator = Paginator(ordenes_con_factura, 1)  # Muestra 2 órdenes por página
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'lista.html', {'page_obj': page_obj, 'es_superusuario': request.user.is_superuser})
+    return render(request, 'lista.html', {
+        'page_obj': page_obj,
+        'es_superusuario': request.user.is_superuser,
+        'facturas_creadas': facturas_creadas,
+        'facturas_anuladas': facturas_anuladas,
+        'facturas_por_entregar': facturas_por_entregar,
+        'facturas_entregadas': facturas_entregadas,
+        'facturas_rechazadas': facturas_rechazadas,
+        'facturas_rectificadas': facturas_rectificadas,
+    })
+
 
 def logout_view(request):
     auth_logout(request)
@@ -326,30 +354,7 @@ def modificar_estado_orden(request, orden_id):
             return JsonResponse({'error': 'Debe ingresar un estado.'}, status=400)
     return JsonResponse({'error': 'Método no permitido.'}, status=405)
 
-@login_required
-def lista_ordenes_facturas(request):
-    if request.user.is_superuser:
-        ordenes = OrdenDeCompra.objects.all()
-    else:
-        ordenes = OrdenDeCompra.objects.filter(usuario=request.user)
 
-    ordenes_con_factura = []
-
-    for orden in ordenes:
-        factura = Factura.objects.filter(orden_de_compra=orden).first()
-        detalles = DetallePedido.objects.filter(orden_de_compra=orden)
-        total = sum(detalle.cantidad * detalle.producto.precio for detalle in detalles)
-        ordenes_con_factura.append({
-            'orden': orden,
-            'factura': factura,
-            'detalles': detalles,
-            'total': total
-        })
-
-    return render(request, 'lista.html', {
-        'ordenes_con_factura': ordenes_con_factura,
-        'es_superusuario': request.user.is_superuser
-    })
 
 @csrf_exempt
 def modificar_estado(request, orden_id):
@@ -362,6 +367,12 @@ def modificar_estado(request, orden_id):
         factura = orden.factura
         factura.estado = estado
         factura.motivo = motivo
+
+        # Verificar si el estado es "Entregado"
+        if estado == "Entregado":
+            factura.condicion = 'entregado'
+            factura.save()
+
         factura.save()
 
         return JsonResponse({'status': 'success'})
@@ -401,4 +412,30 @@ def lista_facturas_entregadas(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'facturas_entregadas.html', {'page_obj': page_obj, 'es_superusuario': request.user.is_superuser})
+
+@csrf_exempt
+@login_required
+def anular_factura(request, orden_id):
+    if request.method == 'POST':
+        orden = get_object_or_404(OrdenDeCompra, id=orden_id)
+        data = json.loads(request.body.decode('utf-8'))
+        estado = data.get('estado')
+
+        if estado == 'Anulada':
+            # Crear el detalle de estado
+            DetalleEstado.objects.create(
+                factura=orden.factura,
+                estado=estado,
+                motivo='Anulada'
+            )
+            # Actualizar el estado de la factura
+            orden.factura.estado = estado
+            # Cambiar la condición de la factura a "Anulada"
+            orden.factura.condicion = 'Anulada'
+            orden.factura.save()
+
+            return JsonResponse({'success': 'Factura anulada con éxito.'})
+        else:
+            return JsonResponse({'error': 'Estado inválido.'}, status=400)
+    return JsonResponse({'error': 'Método no permitido.'}, status=405)
 
