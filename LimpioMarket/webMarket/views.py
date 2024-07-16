@@ -358,7 +358,7 @@ def modificar_estado_orden(request, orden_id):
 def modificar_estado(request, orden_id):
     if request.method == 'POST':
         orden = get_object_or_404(OrdenDeCompra, id=orden_id)
-        data = json.loads(request.body)
+        data = json.loads(request.body.decode('utf-8'))
         estado = data.get('estado')
         motivo = data.get('motivo', '')
 
@@ -367,15 +367,14 @@ def modificar_estado(request, orden_id):
         factura.motivo = motivo
 
         # Verificar si el estado es "Entregado"
-        if estado == "Entregado":
-            factura.condicion = 'entregado'
-            factura.save()
-
+        if estado == 'Entregado':
+            factura.condicion = 'Entregado'
+        
         factura.save()
 
         return JsonResponse({'status': 'success'})
 
-    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=400)
 
 @login_required
 def lista_facturas_entregadas(request):

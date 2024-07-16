@@ -26,7 +26,7 @@
         </div>
 
         {% for item in page_obj %}
-        <div class="orden">
+        <div class="orden {% if item.factura.condicion == 'creada' and item.factura.estado == 'Por entregar' or item.factura.estado == 'Por Entregar' %}amarillo{% elif item.factura.condicion == 'rectificado' and item.factura.estado == 'Por Entregar' %}naranjo{% elif item.factura.condicion == 'creada' or item.factura.condicion == 'rectificado' and item.factura.estado == 'Entregado' %}verde{% elif item.factura.condicion == 'Anulada' %}rojo{% endif %}">
             <h2>Orden de Compra #{{item.orden.id}}</h2>
             <div class="info-container">
                 <table>

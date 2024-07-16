@@ -25,7 +25,7 @@
         </div>
 
         {% for item in page_obj %}
-        <div class="orden">
+        <div class="orden" style="border: 1px solid green;">
             <h2 onclick="toggleDetallesEstado({{ item.orden.id }})" style="cursor: pointer;">Orden de Compra #{{ item.orden.id }}</h2>
             <div class="info-container">
                 <table>

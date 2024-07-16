@@ -279,3 +279,18 @@ h1 {
 .entregado{
     background-color: green;
 }
+
+.amarillo {
+    border: 1px solid yellow;
+}
+
+.naranjo {
+    border: 1px solid orange;
+}
+
+.verde {
+    border: 1px solid rgb(34, 204, 34);
+}
+.rojo{
+    border: 1px solid red
+}
