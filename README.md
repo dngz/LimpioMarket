@@ -17,7 +17,7 @@ El objetivo principal de LimpioMarket es mejorar la eficiencia operativa, optimi
 3. **Iniciar el entorno virtual de la aplicación:**
    
    ```
-   EntornoMarket\Scripts\activate
+   EnvLimpioMarket\Scripts\activate
    ```
 4. **Instala las dependencias necesarias utilizando pip:**
    ```
