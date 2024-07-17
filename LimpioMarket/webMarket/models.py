@@ -101,7 +101,7 @@ class Factura(models.Model):
     total = models.IntegerField()
     fecha_emision = models.DateTimeField(default=timezone.now)
     condicion = models.CharField(max_length=20, default='creada')
-    estado = models.CharField(max_length=20, default='Por entregar')
+    estado = models.CharField(max_length=20, default='Por Entregar')
     motivo = models.TextField(null=True, blank=True)
 
     # Nuevos campos para el estado 'Entregado'

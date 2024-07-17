@@ -16,4 +16,5 @@ urlpatterns = [
     path('ordenes/<int:orden_id>/modificar_estado/', modificar_estado_orden, name='modificar_estado_orden'),
     path('ordenes/<int:orden_id>/historial/', ver_historial, name='ver_historial'),
     path('facturas_entregadas/', lista_facturas_entregadas, name='facturas_entregadas'),
+    path('ordenes/<int:orden_id>/anular_factura/', anular_factura, name='anular_factura'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

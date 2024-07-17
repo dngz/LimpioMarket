@@ -234,3 +234,63 @@ h1 {
     margin: 0 auto;
     border-radius: 5px;
 }
+
+.contador-container {
+    background-color: #fff; /* Fondo blanco para el contenedor */
+    border: 1px solid #ddd; /* Borde del contenedor */
+    border-radius: 8px; /* Esquinas redondeadas */
+    padding: 20px; /* Espaciado interno */
+    margin-left: 20px; /* Espacio a la izquierda del contenedor */
+    width: 250px; /* Ancho del contenedor */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra suave */
+}
+
+.contador-container li {
+    list-style: none; /* Sin puntos en la lista */
+    margin-bottom: 10px; /* Espacio entre los elementos */
+    font-size: 16px; /* Tamaño de fuente */
+    color: #333; /* Color del texto */
+}
+
+.condicion {
+    display: inline-block; /* Permite el ajuste de tamaño */
+    margin-left: 5px;
+    color: white; /* Color del texto */
+    font-weight: bold; /* Texto en negrita */
+    font-size: 16px; /* Tamaño de la fuente */
+    text-align: center; /* Centra el texto horizontalmente */
+    line-height: 40px; /* Centra el texto verticalmente */
+    border: 2px solid white; /* Borde blanco para mayor claridad */
+    border-radius: 5px; /* Bordes redondeados para un toque estético */
+    padding: 5px; /* Espacio interno para el texto */
+    box-sizing: border-box; /* Asegura que el padding no afecte el tamaño total */
+    margin-left: 80%;
+}
+
+.creada {
+    background-color: rgb(255, 255, 0); /* Color de fondo para "creada" */
+    color: black;
+}
+
+.rectificado {
+    background-color: orange; /* Color de fondo para "rectificado" */
+}
+
+.entregado{
+    background-color: green;
+}
+
+.amarillo {
+    border: 1px solid yellow;
+}
+
+.naranjo {
+    border: 1px solid orange;
+}
+
+.verde {
+    border: 1px solid rgb(34, 204, 34);
+}
+.rojo{
+    border: 1px solid red
+}
